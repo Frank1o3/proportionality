@@ -1,5 +1,7 @@
 package frank1o3.statscale;
 
+import frank1o3.statscale.storage.ServerScaleConfig;
+
 public final class Scale {
 
     private Scale() {
@@ -11,36 +13,37 @@ public final class Scale {
      * @param scale    Current entity scale
      * @param maxScale Maximum allowed scale
      */
-    public static ScaleProfile calculate(double scale, double maxScale) {
+    public static ScaleProfile calculate(double scale, double maxScale, ServerScaleConfig config) {
 
         return new ScaleProfile(
                 scale,
-                calculate(scale, maxScale, AttributeType.MAX_HEALTH),
-                calculate(scale, maxScale, AttributeType.MOVEMENT_SPEED),
-                calculate(scale, maxScale, AttributeType.JUMP_STRENGTH),
-                calculate(scale, maxScale, AttributeType.ATTACK_DAMAGE),
-                calculate(scale, maxScale, AttributeType.REACH),
-                calculate(scale, maxScale, AttributeType.STEP_HEIGHT),
-                calculate(scale, maxScale, AttributeType.FALL_DISTANCE));
+                calculate(scale, maxScale, AttributeType.MAX_HEALTH, config),
+                calculate(scale, maxScale, AttributeType.MOVEMENT_SPEED, config),
+                calculate(scale, maxScale, AttributeType.JUMP_STRENGTH, config),
+                calculate(scale, maxScale, AttributeType.ATTACK_DAMAGE, config),
+                calculate(scale, maxScale, AttributeType.REACH, config),
+                calculate(scale, maxScale, AttributeType.STEP_HEIGHT, config),
+                calculate(scale, maxScale, AttributeType.FALL_DISTANCE, config));
     }
 
     private static double calculate(
             double scale,
             double maxScale,
-            AttributeType type) {
+            AttributeType type,
+            ServerScaleConfig config) {
 
         if (scale <= 1.0) {
             return 1.0;
         }
 
         double exponent = switch (type) {
-            case MAX_HEALTH -> 1.0;
-            case ATTACK_DAMAGE -> 0.9;
-            case REACH -> 0.85;
-            case STEP_HEIGHT -> 0.7;
-            case JUMP_STRENGTH -> 0.3;
-            case MOVEMENT_SPEED -> 0.35;
-            case FALL_DISTANCE -> 0.01;
+            case MAX_HEALTH -> config.exponentMaxHealth;
+            case ATTACK_DAMAGE -> config.exponentAttackDamage;
+            case REACH -> config.exponentReach;
+            case STEP_HEIGHT -> config.exponentStepHeight;
+            case JUMP_STRENGTH -> config.exponentJumpStrength;
+            case MOVEMENT_SPEED -> config.exponentMovementSpeed;
+            case FALL_DISTANCE -> config.exponentFallDistance;
         };
 
         return Math.pow(scale, exponent);

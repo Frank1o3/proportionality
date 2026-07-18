@@ -4,6 +4,7 @@ import frank1o3.statscale.network.ScaleRequestPayload;
 import frank1o3.statscale.network.ScaleSyncPayload;
 import frank1o3.statscale.network.ScalePacketHandler;
 import frank1o3.statscale.storage.ScaleStorage;
+import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -53,6 +54,7 @@ public class Proportionality implements ModInitializer {
      * Only accessed from the server tick thread; no synchronisation needed.
      */
     private static ScaleStorage storage;
+    private static ServerScaleConfig config;
 
     // -------------------------------------------------------------------------
     // ModInitializer
@@ -60,10 +62,17 @@ public class Proportionality implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        config = ServerScaleConfig.load();
+        LOGGER.info("[Proportionality] Configuration rules loaded successfully.");
+
         registerPackets();
         registerLifecycleEvents();
         registerLoginSync();
         registerCommand();
+    }
+
+    public static ServerScaleConfig getConfig() {
+        return config;
     }
 
     // -------------------------------------------------------------------------
@@ -86,7 +95,7 @@ public class Proportionality implements ModInitializer {
                 ScaleRequestPayload.TYPE,
                 (payload, context) -> {
                     // context.player() is already on the server thread via Fabric's executor
-                    ScalePacketHandler.handleScaleRequest(payload, context.player(), storage);
+                    ScalePacketHandler.handleScaleRequest(payload, context.player(), storage, getConfig());
                 });
     }
 
@@ -99,9 +108,14 @@ public class Proportionality implements ModInitializer {
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            LOGGER.info("[Proportionality] SERVER_STOPPING fired.");
+
             if (storage != null) {
+                LOGGER.info("[Proportionality] Saving scale storage...");
                 storage.save();
                 LOGGER.info("[Proportionality] Scale storage flushed to disk.");
+            } else {
+                LOGGER.warn("[Proportionality] Cannot save scale storage: storage is null!");
             }
         });
     }
@@ -117,7 +131,7 @@ public class Proportionality implements ModInitializer {
                         handler.player.getName().getString());
                 return;
             }
-            ScalePacketHandler.syncPlayerScale(handler.player, storage);
+            ScalePacketHandler.syncPlayerScale(handler.player, storage, getConfig());
         });
     }
 
@@ -125,12 +139,27 @@ public class Proportionality implements ModInitializer {
     private static void registerCommand() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess,
                 environment) -> dispatcher.register(Commands.literal("scale")
-                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
-                        .then(Commands.literal("get")
-                                .executes(context -> 1)) // placeholder – returns success
+                        .requires(source -> source.permissions().hasPermission(Permissions.CHAT_SEND_COMMANDS))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("value", FloatArgumentType.floatArg(0.1f, 32.0f))
-                                        .executes(HandleCallbacks::MeSet)))));
+                                        .executes(context -> HandleCallbacks.MeSet(context, getConfig()))))
+                        .then(Commands.literal("reload")
+                                .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
+                                .executes(context -> {
+                                    // 1. Reload file into memory
+                                    config = ServerScaleConfig.load();
+                                    context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component
+                                            .literal("StatScale config reloaded from file!"), true);
+
+                                    // 2. Refresh attribute scales live for all active players online
+                                    if (context.getSource().getServer() != null) {
+                                        context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> {
+                                            // This recalculates attributes using the new JSON parameters and syncs them
+                                            ScalePacketHandler.syncPlayerScale(player, storage, getConfig());
+                                        });
+                                    }
+                                    return 1;
+                                }))));
     }
 
     // -------------------------------------------------------------------------

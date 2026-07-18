@@ -12,14 +12,18 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
  *
  * <h2>Responsibilities</h2>
  * <ul>
- *   <li>Register the S2C {@link ScaleSyncPayload} receiver so the client can update
- *       {@link ScaleClientState} when the server pushes a sync.</li>
- *   <li>Provide {@link #sendScaleRequest} as a thin, convenient wrapper around
- *       {@link ClientPlayNetworking#send} so GUI code stays free of networking details.</li>
+ * <li>Register the S2C {@link ScaleSyncPayload} receiver so the client can
+ * update
+ * {@link ScaleClientState} when the server pushes a sync.</li>
+ * <li>Provide {@link #sendScaleRequest} as a thin, convenient wrapper around
+ * {@link ClientPlayNetworking#send} so GUI code stays free of networking
+ * details.</li>
  * </ul>
  *
- * <p>{@link #register()} must be called from
- * {@link frank1o3.statscale.client.ProportionalityClient#onInitializeClient()} before
+ * <p>
+ * {@link #register()} must be called from
+ * {@link frank1o3.statscale.client.ProportionalityClient#onInitializeClient()}
+ * before
  * any packet is received.
  */
 @Environment(EnvType.CLIENT)
@@ -42,8 +46,8 @@ public final class ClientScaleNetwork {
                 ScaleSyncPayload.TYPE,
                 (payload, context) -> {
                     // context.client().execute() marshals onto the render/main client thread.
-                    context.client().execute(() ->
-                            ScaleClientState.applySync(payload.currentScale(), payload.serverMaxScale()));
+                    context.client().execute(
+                            () -> ScaleClientState.applySync(payload.currentScale(), payload.serverMaxScale()));
                 });
     }
 
@@ -52,15 +56,21 @@ public final class ClientScaleNetwork {
     // -------------------------------------------------------------------------
 
     /**
-     * Sends a {@link ScaleRequestPayload} to the server asking it to apply and persist
+     * Sends a {@link ScaleRequestPayload} to the server asking it to apply and
+     * persist
      * the given scale value for the local player.
      *
-     * <p>The client also optimistically updates {@link ScaleClientState#setCurrentScale}
-     * so the GUI reflects the requested value immediately. If the server clamps it, the
+     * <p>
+     * The client also optimistically updates
+     * {@link ScaleClientState#setCurrentScale}
+     * so the GUI reflects the requested value immediately. If the server clamps it,
+     * the
      * subsequent {@link ScaleSyncPayload} will correct the cached value.
      *
-     * @param scale The desired scale. Should be within the range shown by the slider
-     *              ({@code [0.1, serverMaxScale]}), but the server will clamp regardless.
+     * @param scale The desired scale. Should be within the range shown by the
+     *              slider
+     *              ({@code [0.1, serverMaxScale]}), but the server will clamp
+     *              regardless.
      */
     public static void sendScaleRequest(float scale) {
         ScaleClientState.setCurrentScale(scale); // optimistic update

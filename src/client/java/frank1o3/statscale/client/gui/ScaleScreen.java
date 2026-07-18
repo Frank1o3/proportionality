@@ -92,8 +92,6 @@ public class ScaleScreen extends Screen {
     /** The screen to return to when this screen is closed. May be null. */
     private final @Nullable Screen parent;
 
-    
-
     // -------------------------------------------------------------------------
     // Construction
     // -------------------------------------------------------------------------

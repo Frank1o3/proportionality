@@ -3,15 +3,16 @@
 	"id": "proportionality",
 	"version": "${version}",
 	"name": "Proportionality",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "A server-side and client-side Minecraft mod that lets players scale their size and automatically adjusts their attributes proportionally.",
 	"authors": [
-		"Me!"
+		"Frank1o3"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://modrinth.com/",
+		"sources": "https://github.com/Frank1o3/Proportionality",
+		"issues": "https://github.com/Frank1o3/Proportionality/issues"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/proportionality/icon.png",
 	"environment": "*",
 	"entrypoints": {

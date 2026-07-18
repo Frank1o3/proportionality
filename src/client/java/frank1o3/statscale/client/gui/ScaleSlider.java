@@ -105,9 +105,6 @@ public final class ScaleSlider extends AbstractWidget {
      */
     private double normalized;
 
-    /** True while the user is actively dragging with the mouse. */
-    private boolean dragging;
-
     /**
      * True after the first {@link #onValueChanged} call that produced a different
      * value from the initial one; cleared when the value is committed.
@@ -228,7 +225,6 @@ public final class ScaleSlider extends AbstractWidget {
 
     @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
-        dragging = true;
         applyMouseX(event.x());
     }
 
@@ -239,7 +235,6 @@ public final class ScaleSlider extends AbstractWidget {
 
     @Override
     public void onRelease(MouseButtonEvent event) {
-        dragging = false;
         commit();
     }
 

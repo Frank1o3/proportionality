@@ -1,5 +1,5 @@
 {
-    "key.categories.proportionality": "비례성",
+    "key.categories.proportionality.main": "비례성",
     "key.proportionality.open_scale_screen": "스케일 화면 열기",
     "gui.proportionality.scale.title": "스케일",
     "gui.proportionality.scale.label": "스케일",

@@ -29,10 +29,12 @@ public final class ScaleKeybind {
      * Translation key used for the keybind category shown in the Controls screen.
      */
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category
-            .register(Identifier.withDefaultNamespace(Proportionality.MOD_ID));
+            .register(Identifier.fromNamespaceAndPath(Proportionality.MOD_ID, "main"));
 
     /** Translation key for the keybind name shown in the Controls screen. */
-    private static final String BINDING_KEY = "open_scale_screen";
+    private static final String BINDING_KEY = Identifier.fromNamespaceAndPath(
+            Proportionality.MOD_ID,
+            "open_scale_screen").toLanguageKey("key");
 
     /** The registered {@link KeyMapping} instance. */
     private static KeyMapping openScreenKey;

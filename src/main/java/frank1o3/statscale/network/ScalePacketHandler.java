@@ -3,6 +3,7 @@ package frank1o3.statscale.network;
 import frank1o3.statscale.HandleCallbacks;
 import frank1o3.statscale.Proportionality;
 import frank1o3.statscale.storage.ScaleStorage;
+import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -78,7 +79,7 @@ public final class ScalePacketHandler {
     public static void handleScaleRequest(
             ScaleRequestPayload payload,
             ServerPlayer player,
-            ScaleStorage storage) {
+            ScaleStorage storage, ServerScaleConfig config) {
 
         // 1. Validate + clamp (never trust the client)
         float requested = payload.scale();
@@ -91,7 +92,7 @@ public final class ScalePacketHandler {
                 player.getName().getString(), requested, clamped, effectiveMax);
 
         // 2. Apply the full attribute profile
-        HandleCallbacks.applyScaleProfile(player, clamped, effectiveMax);
+        HandleCallbacks.applyScaleProfile(player, clamped, effectiveMax, config);
 
         // 3. Persist
         storage.setScale(player.getUUID(), clamped);
@@ -116,13 +117,13 @@ public final class ScalePacketHandler {
      * @param player  The joining player.
      * @param storage The active {@link ScaleStorage} instance.
      */
-    public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage) {
+    public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config) {
         double saved = storage.getScale(player.getUUID());
         double attributeMax = resolveAttributeMax(player);
         double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
 
         // Re-apply on login so attributes are correct even after a server restart.
-        HandleCallbacks.applyScaleProfile(player, saved, effectiveMax);
+        HandleCallbacks.applyScaleProfile(player, saved, effectiveMax, config);
 
         ServerPlayNetworking.send(player, new ScaleSyncPayload(saved, effectiveMax));
 

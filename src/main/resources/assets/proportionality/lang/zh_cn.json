@@ -1,5 +1,5 @@
 {
-    "key.categories.proportionality": "比例",
+    "key.categories.proportionality.main": "比例",
     "key.proportionality.open_scale_screen": "打开缩放界面",
     "gui.proportionality.scale.title": "缩放",
     "gui.proportionality.scale.label": "缩放",
