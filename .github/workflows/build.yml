@@ -85,6 +85,20 @@ jobs:
           echo "Mod version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Read Minecraft version
+        id: game_version
+        shell: bash
+        run: |
+          GAME_VERSION=$(sed -n 's/^minecraft_version=//p' gradle.properties | head -n1 | tr -d '[:space:]')
+
+          if [ -z "$GAME_VERSION" ]; then
+            echo "Could not determine Minecraft version."
+            exit 1
+          fi
+
+          echo "Minecraft version: $GAME_VERSION"
+          echo "game_version=$GAME_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
