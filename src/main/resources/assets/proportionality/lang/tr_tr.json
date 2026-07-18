@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Orantılılık",
+    "key.category.proportionality.main": "Orantılılık",
     "key.proportionality.open_scale_screen": "Ölçek Ekranını Aç",
     "gui.proportionality.scale.title": "Ölçek",
     "gui.proportionality.scale.label": "Ölçek",
-    "gui.done": "Bitti"
+    "gui.proportionality.scale.reset": "Sıfırla",
+    "gui.done": "Tamam"
 }

@@ -89,7 +89,7 @@ public final class ScaleClientState {
      *
      * @param scale The scale value just sent to the server.
      */
-    public static void setCurrentScale(float scale) {
+    public static void setCurrentScale(double scale) {
         currentScale = scale;
     }
 

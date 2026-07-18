@@ -1,4 +1,4 @@
-package frank1o3.statscale;
+package frank1o3.statscale.core;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;

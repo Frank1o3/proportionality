@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Proportionalitet",
-    "key.proportionality.open_scale_screen": "Åbn skalaskærm",
-    "gui.proportionality.scale.title": "Skala",
-    "gui.proportionality.scale.label": "Skala",
+    "key.category.proportionality.main": "Proportionalitet",
+    "key.proportionality.open_scale_screen": "Åbn skærm for skalering",
+    "gui.proportionality.scale.title": "Skalering",
+    "gui.proportionality.scale.label": "Skalering",
+    "gui.proportionality.scale.reset": "Nulstil",
     "gui.done": "Udført"
 }

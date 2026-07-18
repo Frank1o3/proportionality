@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Tỷ lệ",
-    "key.proportionality.open_scale_screen": "Mở màn hình Tỷ lệ",
+    "key.category.proportionality.main": "Tỷ lệ",
+    "key.proportionality.open_scale_screen": "Mở màn hình tỷ lệ",
     "gui.proportionality.scale.title": "Tỷ lệ",
     "gui.proportionality.scale.label": "Tỷ lệ",
+    "gui.proportionality.scale.reset": "Đặt lại",
     "gui.done": "Xong"
 }

@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "比例",
+    "key.category.proportionality.main": "比例性",
     "key.proportionality.open_scale_screen": "スケール画面を開く",
     "gui.proportionality.scale.title": "スケール",
     "gui.proportionality.scale.label": "スケール",
+    "gui.proportionality.scale.reset": "リセット",
     "gui.done": "完了"
 }

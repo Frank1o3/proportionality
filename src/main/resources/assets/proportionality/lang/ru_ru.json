@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Пропорциональность",
+    "key.category.proportionality.main": "Пропорциональность",
     "key.proportionality.open_scale_screen": "Открыть экран масштабирования",
     "gui.proportionality.scale.title": "Масштаб",
     "gui.proportionality.scale.label": "Масштаб",
+    "gui.proportionality.scale.reset": "Сбросить",
     "gui.done": "Готово"
 }

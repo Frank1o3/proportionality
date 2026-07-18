@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Proporcionalita",
+    "key.category.proportionality.main": "Proporcionalita",
     "key.proportionality.open_scale_screen": "Otevřít obrazovku měřítka",
     "gui.proportionality.scale.title": "Měřítko",
     "gui.proportionality.scale.label": "Měřítko",
+    "gui.proportionality.scale.reset": "Resetovat",
     "gui.done": "Hotovo"
 }

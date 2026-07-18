@@ -16,11 +16,12 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Opened via the keybind registered in
  * {@link frank1o3.statscale.client.ScaleKeybind}.
- * Displays a single {@link ScaleSlider} that lets the player choose their
- * desired scale.
+ * Displays a {@link ScaleSlider} for choosing a scale, a Done button to close
+ * the screen, and a Reset button to snap the player back to the default scale
+ * of {@code 1.0}.
  *
  * <h2>Data flow</h2>
- * 
+ *
  * <pre>
  *  Player moves slider
  *       │
@@ -34,13 +35,20 @@ import org.jetbrains.annotations.Nullable;
  *       │
  *       ▼  server sends ScaleSyncPayload back
  *  {@link ScaleClientState#setCurrentScale} updates local cache
+ *
+ *  Player clicks Reset
+ *       │
+ *       ▼
+ *  {@link ClientScaleNetwork#sendResetRequest} ──► server (scale = 1.0)
+ *       │
+ *       ▼  server sends ScaleSyncPayload back
+ *  slider snaps to 1.0, ScaleClientState updated
  * </pre>
  *
  * <p>
  * The slider range is driven by {@link ScaleClientState}: the minimum is always
  * {@code 0.1}, and the maximum is whatever the server advertised on login
- * (defaulting
- * to {@code 16.0} for singleplayer / offline use).
+ * (defaulting to {@code 16.0} for singleplayer / offline use).
  */
 @Environment(EnvType.CLIENT)
 public class ScaleScreen extends Screen {
@@ -52,7 +60,7 @@ public class ScaleScreen extends Screen {
     /** Width of the panel background in pixels. */
     private static final int PANEL_WIDTH = 220;
     /** Height of the panel background in pixels. */
-    private static final int PANEL_HEIGHT = 80;
+    private static final int PANEL_HEIGHT = 96;
 
     /** Width of the slider widget. Fits neatly inside PANEL_WIDTH with padding. */
     private static final int SLIDER_WIDTH = 180;
@@ -62,12 +70,17 @@ public class ScaleScreen extends Screen {
     /** Vertical gap between the panel top edge and the slider top edge. */
     private static final int SLIDER_TOP_OFFSET = 28;
 
-    /** Width of the Done button. */
-    private static final int BUTTON_WIDTH = 80;
-    /** Height of the Done button. */
+    /**
+     * Width of each bottom button (Done / Reset).
+     * Both buttons share the available width with a small gap between them.
+     */
+    private static final int BUTTON_WIDTH = 86;
+    /** Height of each bottom button. */
     private static final int BUTTON_HEIGHT = 20;
-    /** Vertical gap from the bottom of the slider to the top of the button. */
-    private static final int BUTTON_GAP = 10;
+    /** Horizontal gap between the two bottom buttons. */
+    private static final int BUTTON_GAP = 8;
+    /** Vertical gap from the bottom of the slider to the top of the buttons. */
+    private static final int BUTTONS_TOP_OFFSET = 10;
 
     /** Colour of the dimmed screen overlay drawn behind the panel. */
     private static final int OVERLAY_COLOR = 0x88_000000;
@@ -92,6 +105,12 @@ public class ScaleScreen extends Screen {
     /** The screen to return to when this screen is closed. May be null. */
     private final @Nullable Screen parent;
 
+    /**
+     * Reference kept so the Reset button can snap the slider position to 1.0
+     * without the player having to drag it there manually.
+     */
+    private ScaleSlider slider;
+
     // -------------------------------------------------------------------------
     // Construction
     // -------------------------------------------------------------------------
@@ -99,13 +118,12 @@ public class ScaleScreen extends Screen {
     /**
      * Creates a new {@link ScaleScreen}.
      *
-     * @param parent The screen to return to on close, or {@code null} to return to
-     *               the game.
+     * @param parent The screen to return to on close, or {@code null} to return
+     *               to the game.
      */
     public ScaleScreen(@Nullable Screen parent) {
         super(Component.translatable("gui.proportionality.scale.title"));
         this.parent = parent;
-        ScaleClientState.getCurrentScale();
     }
 
     // -------------------------------------------------------------------------
@@ -117,7 +135,6 @@ public class ScaleScreen extends Screen {
         int cx = width / 2;
         int cy = height / 2;
 
-        // Top-left corner of the centred panel
         int panelY = cy - PANEL_HEIGHT / 2;
 
         // Slider centred horizontally inside the panel
@@ -126,27 +143,43 @@ public class ScaleScreen extends Screen {
 
         double serverMax = ScaleClientState.getServerMaxScale();
 
-        ScaleSlider slider = ScaleSlider.builder()
+        slider = ScaleSlider.builder()
                 .bounds(sliderX, sliderY, SLIDER_WIDTH, SLIDER_HEIGHT)
                 .range(SCALE_MIN, serverMax)
                 .step(SCALE_STEP)
                 .initialValue(ScaleClientState.getCurrentScale())
                 .label(Component.translatable("gui.proportionality.scale.label"))
                 .formatter(v -> Component.literal(String.format("%.1fx", v)))
-                .onValueChanged(v -> v.floatValue())
+                .onValueChanged(v -> {
+                }) // live label update is handled inside ScaleSlider
                 .onValueCommitted(v -> ClientScaleNetwork.sendScaleRequest(v.floatValue()))
                 .build();
 
         addRenderableWidget(slider);
 
-        // Done button – centred below the slider
-        int buttonX = cx - BUTTON_WIDTH / 2;
-        int buttonY = sliderY + SLIDER_HEIGHT + BUTTON_GAP;
+        // ── Bottom buttons (Done | Reset) ────────────────────────────────────
+        int buttonsY = sliderY + SLIDER_HEIGHT + BUTTONS_TOP_OFFSET;
 
+        // Total width occupied by both buttons + gap, centred under the slider.
+        int totalButtonsWidth = BUTTON_WIDTH * 2 + BUTTON_GAP;
+        int doneX = cx - totalButtonsWidth / 2;
+        int resetX = doneX + BUTTON_WIDTH + BUTTON_GAP;
+
+        // Done
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.done"),
                 btn -> onClose())
-                .bounds(buttonX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .bounds(doneX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .build());
+
+        // Reset — sends scale 1.0 to the server and snaps the slider visually.
+        addRenderableWidget(Button.builder(
+                Component.translatable("gui.proportionality.scale.reset"),
+                btn -> {
+                    ClientScaleNetwork.sendResetRequest();
+                    slider.setValue(1.0);
+                })
+                .bounds(resetX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
     }
 
@@ -162,21 +195,21 @@ public class ScaleScreen extends Screen {
         int panelX = cx - PANEL_WIDTH / 2;
         int panelY = cy - PANEL_HEIGHT / 2;
 
-        // 1. Draw your Dimmed screen background overlay
+        // 1. Dimmed screen background overlay
         graphics.fill(0, 0, this.width, this.height, OVERLAY_COLOR);
 
-        // 2. Custom Panel background geometry
+        // 2. Panel background
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, PANEL_COLOR);
 
-        // 3. Panel border frame line
-        this.renderPanelBorder(graphics, panelX, panelY);
+        // 3. Panel border
+        renderPanelBorder(graphics, panelX, panelY);
 
-        // 4. Centered Mod Screen Title text
+        // 4. Centred title text
         int titleY = panelY + 8;
-        graphics.text(this.font, this.getTitle(), cx - this.font.width(this.getTitle()) / 2, titleY, TITLE_COLOR,
-                false);
+        graphics.text(this.font, this.getTitle(),
+                cx - this.font.width(this.getTitle()) / 2, titleY, TITLE_COLOR, false);
 
-        // 5. Passes layout data downstream to child elements (Slider and Button)
+        // 5. Pass layout data downstream to child widgets
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
 
@@ -196,10 +229,7 @@ public class ScaleScreen extends Screen {
     // Screen behaviour
     // -------------------------------------------------------------------------
 
-    /**
-     * Do not pause the game while this screen is open (consistent with Wildfire
-     * screens).
-     */
+    /** Do not pause the game while this screen is open. */
     @Override
     public boolean isPauseScreen() {
         return false;

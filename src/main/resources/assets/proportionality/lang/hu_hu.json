@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Arányosság",
+    "key.category.proportionality.main": "Arányosság",
     "key.proportionality.open_scale_screen": "Skála képernyő megnyitása",
     "gui.proportionality.scale.title": "Skála",
     "gui.proportionality.scale.label": "Skála",
+    "gui.proportionality.scale.reset": "Alaphelyzetbe állítás",
     "gui.done": "Kész"
 }

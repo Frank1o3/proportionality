@@ -1,6 +1,6 @@
 package frank1o3.statscale.network;
 
-import frank1o3.statscale.HandleCallbacks;
+import frank1o3.statscale.core.HandleCallbacks;
 import frank1o3.statscale.Proportionality;
 import frank1o3.statscale.storage.ScaleStorage;
 import frank1o3.statscale.storage.ServerScaleConfig;
@@ -17,8 +17,7 @@ import net.minecraft.world.entity.ai.attributes.RangedAttribute;
  * <h2>Responsibilities</h2>
  * <ul>
  * <li>Receive {@link ScaleRequestPayload} from a client, validate the requested
- * scale,
- * apply it via {@link HandleCallbacks#applyScaleProfile}, persist it in
+ * scale, apply it via {@link HandleCallbacks#applyScaleProfile}, persist it in
  * {@link ScaleStorage}, and confirm the result back to the client via
  * {@link ScaleSyncPayload}.</li>
  * <li>Expose {@link #syncPlayerScale} so the server can push saved scale data
@@ -75,11 +74,13 @@ public final class ScalePacketHandler {
      * @param player  The player who sent the packet.
      * @param storage The active {@link ScaleStorage} instance for this server
      *                session.
+     * @param config  The active {@link ServerScaleConfig} for this server session.
      */
     public static void handleScaleRequest(
             ScaleRequestPayload payload,
             ServerPlayer player,
-            ScaleStorage storage, ServerScaleConfig config) {
+            ScaleStorage storage,
+            ServerScaleConfig config) {
 
         // 1. Validate + clamp (never trust the client)
         float requested = payload.scale();
@@ -88,7 +89,7 @@ public final class ScalePacketHandler {
         double clamped = Mth.clamp(requested, SERVER_MIN_SCALE, effectiveMax);
 
         Proportionality.LOGGER.debug(
-                "[Proportionality] {} requested scale {:.2f}; clamped to {:.2f} (max={})",
+                "[Proportionality] {} requested scale {}; clamped to {} (max={})",
                 player.getName().getString(), requested, clamped, effectiveMax);
 
         // 2. Apply the full attribute profile
@@ -116,6 +117,7 @@ public final class ScalePacketHandler {
      *
      * @param player  The joining player.
      * @param storage The active {@link ScaleStorage} instance.
+     * @param config  The active {@link ServerScaleConfig} instance.
      */
     public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config) {
         double saved = storage.getScale(player.getUUID());
@@ -128,7 +130,7 @@ public final class ScalePacketHandler {
         ServerPlayNetworking.send(player, new ScaleSyncPayload(saved, effectiveMax));
 
         Proportionality.LOGGER.debug(
-                "[Proportionality] Synced scale {:.2f} (max={}) to {}",
+                "[Proportionality] Synced scale {} (max={}) to {}",
                 saved, effectiveMax, player.getName().getString());
     }
 
@@ -138,9 +140,8 @@ public final class ScalePacketHandler {
 
     /**
      * Reads the hard maximum of the {@code minecraft:scale} attribute for this
-     * player.
-     * Falls back to {@link #SERVER_MAX_SCALE} if the attribute is absent or
-     * unbounded.
+     * player. Falls back to {@link #SERVER_MAX_SCALE} if the attribute is absent
+     * or unbounded.
      */
     private static double resolveAttributeMax(ServerPlayer player) {
         AttributeInstance instance = player.getAttribute(Attributes.SCALE);

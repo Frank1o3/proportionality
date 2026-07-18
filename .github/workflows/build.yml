@@ -212,6 +212,31 @@ jobs:
           echo "Found: $JAR"
           echo "jar=$JAR" >> "$GITHUB_OUTPUT"
 
+      - name: Fetch release changelog from GitHub
+        id: changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # Retrieve the body of the release that the previous job just created.
+          CHANGELOG=$(gh release view "v${{ needs.build.outputs.version }}" \
+            --repo "${{ github.repository }}" \
+            --json body \
+            --jq '.body')
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="See the [GitHub release](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.build.outputs.version }}) for the full changelog."
+          fi
+
+          # Write to a temp file to safely handle multi-line content, then read
+          # it back into an output variable using the heredoc delimiter pattern.
+          echo "$CHANGELOG" > /tmp/changelog.md
+          {
+            echo "changelog<<__EOF__"
+            cat /tmp/changelog.md
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Publish to Modrinth
         uses: cloudnode-pro/modrinth-publish@v2
         with:
@@ -219,8 +244,7 @@ jobs:
           project: LkuImp7k
           version: ${{ needs.build.outputs.version }}
           name: Proportionality ${{ needs.build.outputs.version }}
-          changelog: |
-            See the GitHub release for the full changelog.
+          changelog: ${{ steps.changelog.outputs.changelog }}
           loaders: fabric
           game-versions: ${{ needs.build.outputs.game_version }}
           files: ${{ steps.jar.outputs.jar }}

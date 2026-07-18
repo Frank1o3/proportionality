@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Пропорційність",
-    "key.proportionality.open_scale_screen": "Відкрити екран масштабу",
+    "key.category.proportionality.main": "Пропорційність",
+    "key.proportionality.open_scale_screen": "Відкрити екран масштабування",
     "gui.proportionality.scale.title": "Масштаб",
     "gui.proportionality.scale.label": "Масштаб",
+    "gui.proportionality.scale.reset": "Скинути",
     "gui.done": "Готово"
 }

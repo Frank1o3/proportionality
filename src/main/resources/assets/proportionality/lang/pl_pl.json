@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Proporcjonalność",
+    "key.category.proportionality.main": "Proporcjonalność",
     "key.proportionality.open_scale_screen": "Otwórz ekran skali",
     "gui.proportionality.scale.title": "Skala",
     "gui.proportionality.scale.label": "Skala",
+    "gui.proportionality.scale.reset": "Resetuj",
     "gui.done": "Gotowe"
 }

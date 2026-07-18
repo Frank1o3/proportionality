@@ -1,4 +1,4 @@
-package frank1o3.statscale;
+package frank1o3.statscale.core;
 
 import frank1o3.statscale.storage.ServerScaleConfig;
 

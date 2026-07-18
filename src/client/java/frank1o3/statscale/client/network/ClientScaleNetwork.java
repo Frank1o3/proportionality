@@ -13,21 +13,24 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
  * <h2>Responsibilities</h2>
  * <ul>
  * <li>Register the S2C {@link ScaleSyncPayload} receiver so the client can
- * update
- * {@link ScaleClientState} when the server pushes a sync.</li>
- * <li>Provide {@link #sendScaleRequest} as a thin, convenient wrapper around
+ * update {@link ScaleClientState} when the server pushes a sync.</li>
+ * <li>Provide {@link #sendScaleRequest} as a thin wrapper around
  * {@link ClientPlayNetworking#send} so GUI code stays free of networking
  * details.</li>
+ * <li>Provide {@link #sendResetRequest} as a convenience for resetting the
+ * player's scale back to the default value of {@code 1.0}.</li>
  * </ul>
  *
  * <p>
  * {@link #register()} must be called from
  * {@link frank1o3.statscale.client.ProportionalityClient#onInitializeClient()}
- * before
- * any packet is received.
+ * before any packet is received.
  */
 @Environment(EnvType.CLIENT)
 public final class ClientScaleNetwork {
+
+    /** The canonical default / reset scale value sent to the server. */
+    private static final float RESET_SCALE = 1.0f;
 
     private ClientScaleNetwork() {
         throw new UnsupportedOperationException("Utility class");
@@ -57,23 +60,33 @@ public final class ClientScaleNetwork {
 
     /**
      * Sends a {@link ScaleRequestPayload} to the server asking it to apply and
-     * persist
-     * the given scale value for the local player.
+     * persist the given scale value for the local player.
      *
      * <p>
      * The client also optimistically updates
-     * {@link ScaleClientState#setCurrentScale}
-     * so the GUI reflects the requested value immediately. If the server clamps it,
-     * the
-     * subsequent {@link ScaleSyncPayload} will correct the cached value.
+     * {@link ScaleClientState#setCurrentScale} so the GUI reflects the requested
+     * value immediately. If the server clamps it, the subsequent
+     * {@link ScaleSyncPayload} will correct the cached value.
      *
      * @param scale The desired scale. Should be within the range shown by the
-     *              slider
-     *              ({@code [0.1, serverMaxScale]}), but the server will clamp
-     *              regardless.
+     *              slider ({@code [0.1, serverMaxScale]}), but the server will
+     *              clamp regardless.
      */
     public static void sendScaleRequest(float scale) {
         ScaleClientState.setCurrentScale(scale); // optimistic update
         ClientPlayNetworking.send(new ScaleRequestPayload(scale));
+    }
+
+    /**
+     * Sends a {@link ScaleRequestPayload} with the default scale ({@code 1.0})
+     * to the server, effectively resetting the player to their vanilla size.
+     *
+     * <p>
+     * Internally this is identical to calling {@link #sendScaleRequest(float)}
+     * with {@code 1.0f}; the server applies the same validation path and sends
+     * back a {@link ScaleSyncPayload} confirming the reset.
+     */
+    public static void sendResetRequest() {
+        sendScaleRequest(RESET_SCALE);
     }
 }

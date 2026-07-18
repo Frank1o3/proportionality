@@ -1,7 +1,8 @@
 {
-    "key.categories.proportionality.main": "Suhteellisuus",
+    "key.category.proportionality.main": "Suhteellisuus",
     "key.proportionality.open_scale_screen": "Avaa mittakaavanäyttö",
     "gui.proportionality.scale.title": "Mittakaava",
     "gui.proportionality.scale.label": "Mittakaava",
+    "gui.proportionality.scale.reset": "Nollaa",
     "gui.done": "Valmis"
 }
