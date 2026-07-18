@@ -7,6 +7,7 @@ import frank1o3.statscale.storage.ScaleStorage;
 import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -95,7 +96,7 @@ public class Proportionality implements ModInitializer {
                 ScaleRequestPayload.TYPE,
                 (payload, context) -> {
                     // context.player() is already on the server thread via Fabric's executor
-                    ScalePacketHandler.handleScaleRequest(payload, context.player(), storage, getConfig());
+                    ScalePacketHandler.handleScaleRequest(payload, context.player(), storage, config);
                 });
     }
 
@@ -131,7 +132,10 @@ public class Proportionality implements ModInitializer {
                         handler.player.getName().getString());
                 return;
             }
-            ScalePacketHandler.syncPlayerScale(handler.player, storage, getConfig());
+            ScalePacketHandler.syncPlayerScale(handler.player, storage, config);
+        });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config);
         });
     }
 
@@ -142,7 +146,7 @@ public class Proportionality implements ModInitializer {
                         .requires(source -> source.permissions().hasPermission(Permissions.CHAT_SEND_COMMANDS))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("value", FloatArgumentType.floatArg(0.1f, 32.0f))
-                                        .executes(context -> HandleCallbacks.MeSet(context, getConfig()))))
+                                        .executes(context -> HandleCallbacks.MeSet(context, config))))
                         .then(Commands.literal("reload")
                                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
                                 .executes(context -> {
@@ -155,7 +159,7 @@ public class Proportionality implements ModInitializer {
                                     if (context.getSource().getServer() != null) {
                                         context.getSource().getServer().getPlayerList().getPlayers().forEach(player -> {
                                             // This recalculates attributes using the new JSON parameters and syncs them
-                                            ScalePacketHandler.syncPlayerScale(player, storage, getConfig());
+                                            ScalePacketHandler.syncPlayerScale(player, storage, config);
                                         });
                                     }
                                     return 1;

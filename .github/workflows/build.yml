@@ -224,3 +224,9 @@ jobs:
           loaders: fabric
           game-versions: ${{ needs.build.outputs.game_version }}
           files: ${{ steps.jar.outputs.jar }}
+          environment: client-and-server
+          dependencies: |-
+            [{
+              "project_id": "P7dR8mSH",
+              "dependency_type": "required"
+            }]
