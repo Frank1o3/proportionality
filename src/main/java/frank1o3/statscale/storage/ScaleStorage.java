@@ -20,7 +20,9 @@ import java.util.UUID;
  * Persists player scale values in a single JSON file located at
  * {@code <world>/data/proportionality_scales.json}.
  *
- * <p>Layout on disk:
+ * <p>
+ * Layout on disk:
+ * 
  * <pre>
  * {
  *   "550e8400-e29b-41d4-a716-446655440000": 3.5,
@@ -28,7 +30,8 @@ import java.util.UUID;
  * }
  * </pre>
  *
- * <p>All public methods are called from the server thread. No additional
+ * <p>
+ * All public methods are called from the server thread. No additional
  * synchronisation is required for a single-threaded Minecraft server tick loop.
  */
 public final class ScaleStorage {
@@ -38,7 +41,7 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     /** Default scale applied to any player whose UUID is not in the file. */
-    public static final float DEFAULT_SCALE = 1.0f;
+    public static final double DEFAULT_SCALE = 1.0f;
 
     /** File name written inside the world's {@code data/} directory. */
     private static final String FILE_NAME = "proportionality_scales.json";
@@ -50,7 +53,7 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     /** In-memory mirror of the on-disk JSON. Keyed by player UUID. */
-    private final Map<UUID, Float> scales = new HashMap<>();
+    private final Map<UUID, Double> scales = new HashMap<>();
 
     /** Absolute path to the JSON file, resolved once at construction time. */
     private final Path filePath;
@@ -61,9 +64,11 @@ public final class ScaleStorage {
 
     /**
      * Creates a {@link ScaleStorage} bound to the given server's world directory.
-     * Call {@link #load()} immediately after construction to populate the in-memory map.
+     * Call {@link #load()} immediately after construction to populate the in-memory
+     * map.
      *
-     * @param server The running {@link MinecraftServer} used to locate the world data folder.
+     * @param server The running {@link MinecraftServer} used to locate the world
+     *               data folder.
      */
     public ScaleStorage(MinecraftServer server) {
         // getLevelStorageAccess().getLevelDirectory().path() gives us <world>/
@@ -94,7 +99,7 @@ public final class ScaleStorage {
             root.entrySet().forEach(entry -> {
                 try {
                     UUID uuid = UUID.fromString(entry.getKey());
-                    float scale = entry.getValue().getAsFloat();
+                    double scale = entry.getValue().getAsDouble();
                     scales.put(uuid, scale);
                 } catch (IllegalArgumentException e) {
                     Proportionality.LOGGER.warn(
@@ -109,10 +114,12 @@ public final class ScaleStorage {
 
     /**
      * Writes the current in-memory map back to disk.
-     * Called automatically by {@link #setScale(UUID, float)}, and again when the server stops.
+     * Called automatically by {@link #setScale(UUID, float)}, and again when the
+     * server stops.
      */
     public void save() {
-        // Ensure the data directory exists (it always should on a running server, but be safe).
+        // Ensure the data directory exists (it always should on a running server, but
+        // be safe).
         try {
             Files.createDirectories(filePath.getParent());
         } catch (IOException e) {
@@ -139,9 +146,10 @@ public final class ScaleStorage {
      * entry exists (first-time player, or data was cleared).
      *
      * @param uuid The player's unique identifier.
-     * @return The stored scale value, always positive and at least {@link #DEFAULT_SCALE}.
+     * @return The stored scale value, always positive and at least
+     *         {@link #DEFAULT_SCALE}.
      */
-    public float getScale(UUID uuid) {
+    public double getScale(UUID uuid) {
         return scales.getOrDefault(uuid, DEFAULT_SCALE);
     }
 
@@ -150,9 +158,10 @@ public final class ScaleStorage {
      * Immediately writes the updated map to disk so no data is lost on a crash.
      *
      * @param uuid  The player's unique identifier.
-     * @param scale The scale value to store. Should already be validated/clamped by the caller.
+     * @param scale The scale value to store. Should already be validated/clamped by
+     *              the caller.
      */
-    public void setScale(UUID uuid, float scale) {
+    public void setScale(UUID uuid, double scale) {
         scales.put(uuid, scale);
         save(); // write-through: every change is immediately durable
     }

@@ -92,11 +92,7 @@ public class ScaleScreen extends Screen {
     /** The screen to return to when this screen is closed. May be null. */
     private final @Nullable Screen parent;
 
-    /**
-     * The pending scale value while the slider is being dragged.
-     * Updated by {@code onValueChanged} but not sent to the server until committed.
-     */
-    private float pendingScale;
+    
 
     // -------------------------------------------------------------------------
     // Construction
@@ -111,7 +107,7 @@ public class ScaleScreen extends Screen {
     public ScaleScreen(@Nullable Screen parent) {
         super(Component.translatable("gui.proportionality.scale.title"));
         this.parent = parent;
-        this.pendingScale = ScaleClientState.getCurrentScale();
+        ScaleClientState.getCurrentScale();
     }
 
     // -------------------------------------------------------------------------
@@ -124,14 +120,13 @@ public class ScaleScreen extends Screen {
         int cy = height / 2;
 
         // Top-left corner of the centred panel
-        int panelX = cx - PANEL_WIDTH / 2;
         int panelY = cy - PANEL_HEIGHT / 2;
 
         // Slider centred horizontally inside the panel
         int sliderX = cx - SLIDER_WIDTH / 2;
         int sliderY = panelY + SLIDER_TOP_OFFSET;
 
-        float serverMax = ScaleClientState.getServerMaxScale();
+        double serverMax = ScaleClientState.getServerMaxScale();
 
         ScaleSlider slider = ScaleSlider.builder()
                 .bounds(sliderX, sliderY, SLIDER_WIDTH, SLIDER_HEIGHT)
@@ -140,7 +135,7 @@ public class ScaleScreen extends Screen {
                 .initialValue(ScaleClientState.getCurrentScale())
                 .label(Component.translatable("gui.proportionality.scale.label"))
                 .formatter(v -> Component.literal(String.format("%.1fx", v)))
-                .onValueChanged(v -> pendingScale = v.floatValue())
+                .onValueChanged(v -> v.floatValue())
                 .onValueCommitted(v -> ClientScaleNetwork.sendScaleRequest(v.floatValue()))
                 .build();
 
