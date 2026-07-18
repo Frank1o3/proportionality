@@ -201,11 +201,11 @@ jobs:
         uses: cloudnode-pro/modrinth-publish@v2
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
-          project: proportionality
+          project: LkuImp7k
           version: ${{ needs.build.outputs.version }}
           name: Proportionality ${{ needs.build.outputs.version }}
           changelog: |
             See the GitHub release for the full changelog.
           loaders: fabric
-          game-versions: 26.2
+          game-versions: ${{ needs.build.outputs.game_version }}
           files: ${{ steps.jar.outputs.jar }}
