@@ -25,6 +25,7 @@ jobs:
     outputs:
       jar: ${{ steps.jar.outputs.jar }}
       version: ${{ steps.version.outputs.version }}
+      game_version: ${{ steps.game_version.outputs.game_version }}
 
     steps:
       - name: Checkout repository
