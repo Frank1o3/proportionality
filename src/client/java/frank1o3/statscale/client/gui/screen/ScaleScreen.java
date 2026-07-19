@@ -63,7 +63,7 @@ public class ScaleScreen extends Screen {
     /** Width of the panel background in pixels. */
     private static final int PANEL_WIDTH = 220;
     /** Height of the panel background in pixels. */
-    private static final int PANEL_HEIGHT = 140;
+    private static final int PANEL_HEIGHT = 120;
 
     /** Width of the slider widget. Fits neatly inside PANEL_WIDTH with padding. */
     private static final int SLIDER_WIDTH = 180;
