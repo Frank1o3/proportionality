@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "스케일 화면 열기",
     "gui.proportionality.scale.title": "스케일",
     "gui.proportionality.scale.label": "스케일",
+    "gui.proportionality.scale.reset": "초기화",
+    "gui.proportionality.admin.open": "관리자 패널",
+    "gui.proportionality.admin.title": "관리자 패널",
+    "gui.proportionality.admin.player": "플레이어",
+    "gui.proportionality.admin.player_hint": "플레이어 이름 입력…",
+    "gui.proportionality.admin.lookup": "조회",
+    "gui.proportionality.admin.apply": "적용",
+    "gui.proportionality.admin.frozen": "동결됨",
+    "gui.proportionality.admin.unfrozen": "동결 해제됨",
     "gui.done": "완료"
 }

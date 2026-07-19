@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "スケール",
     "gui.proportionality.scale.label": "スケール",
     "gui.proportionality.scale.reset": "リセット",
+    "gui.proportionality.admin.open": "管理パネル",
+    "gui.proportionality.admin.title": "管理パネル",
+    "gui.proportionality.admin.player": "プレイヤー",
+    "gui.proportionality.admin.player_hint": "プレイヤー名を入力…",
+    "gui.proportionality.admin.lookup": "検索",
+    "gui.proportionality.admin.apply": "適用",
+    "gui.proportionality.admin.frozen": "凍結",
+    "gui.proportionality.admin.unfrozen": "凍結解除",
     "gui.done": "完了"
 }

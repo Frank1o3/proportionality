@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "缩放",
     "gui.proportionality.scale.label": "缩放",
     "gui.proportionality.scale.reset": "重置",
+    "gui.proportionality.admin.open": "管理面板",
+    "gui.proportionality.admin.title": "管理面板",
+    "gui.proportionality.admin.player": "玩家",
+    "gui.proportionality.admin.player_hint": "输入玩家名称…",
+    "gui.proportionality.admin.lookup": "查找",
+    "gui.proportionality.admin.apply": "应用",
+    "gui.proportionality.admin.frozen": "已冻结",
+    "gui.proportionality.admin.unfrozen": "已解冻",
     "gui.done": "完成"
 }

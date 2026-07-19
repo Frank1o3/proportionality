@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Mittakaava",
     "gui.proportionality.scale.label": "Mittakaava",
     "gui.proportionality.scale.reset": "Nollaa",
+    "gui.proportionality.admin.open": "Ylläpitopaneeli",
+    "gui.proportionality.admin.title": "Ylläpitopaneeli",
+    "gui.proportionality.admin.player": "Pelaaja",
+    "gui.proportionality.admin.player_hint": "Kirjoita pelaajan nimi…",
+    "gui.proportionality.admin.lookup": "Etsi",
+    "gui.proportionality.admin.apply": "Käytä",
+    "gui.proportionality.admin.frozen": "Jäädytetty",
+    "gui.proportionality.admin.unfrozen": "Ei jäädytetty",
     "gui.done": "Valmis"
 }

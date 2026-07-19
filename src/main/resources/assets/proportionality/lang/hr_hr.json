@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Proporcionalnost",
+    "key.proportionality.open_scale_screen": "Otvori zaslon za skaliranje",
+    "gui.proportionality.scale.title": "Skala",
+    "gui.proportionality.scale.label": "Skala",
+    "gui.proportionality.scale.reset": "Poništi",
+    "gui.proportionality.admin.open": "Administratorska ploča",
+    "gui.proportionality.admin.title": "Administratorska ploča",
+    "gui.proportionality.admin.player": "Igrač",
+    "gui.proportionality.admin.player_hint": "Unesite ime igrača…",
+    "gui.proportionality.admin.lookup": "Pretraži",
+    "gui.proportionality.admin.apply": "Primijeni",
+    "gui.proportionality.admin.frozen": "Zamrznut",
+    "gui.proportionality.admin.unfrozen": "Odmrznut",
+    "gui.done": "Gotovo"
+}

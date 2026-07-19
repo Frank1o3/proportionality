@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Skála",
     "gui.proportionality.scale.label": "Skála",
     "gui.proportionality.scale.reset": "Alaphelyzetbe állítás",
+    "gui.proportionality.admin.open": "Adminisztrációs panel",
+    "gui.proportionality.admin.title": "Adminisztrációs panel",
+    "gui.proportionality.admin.player": "Játékos",
+    "gui.proportionality.admin.player_hint": "Játékos nevének megadása…",
+    "gui.proportionality.admin.lookup": "Keresés",
+    "gui.proportionality.admin.apply": "Alkalmaz",
+    "gui.proportionality.admin.frozen": "Fagyasztva",
+    "gui.proportionality.admin.unfrozen": "Feloldva",
     "gui.done": "Kész"
 }

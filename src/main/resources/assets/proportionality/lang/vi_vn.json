@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Tỷ lệ",
     "gui.proportionality.scale.label": "Tỷ lệ",
     "gui.proportionality.scale.reset": "Đặt lại",
+    "gui.proportionality.admin.open": "Bảng điều khiển quản trị",
+    "gui.proportionality.admin.title": "Bảng điều khiển quản trị",
+    "gui.proportionality.admin.player": "Người chơi",
+    "gui.proportionality.admin.player_hint": "Nhập tên người chơi…",
+    "gui.proportionality.admin.lookup": "Tra cứu",
+    "gui.proportionality.admin.apply": "Áp dụng",
+    "gui.proportionality.admin.frozen": "Đã đóng băng",
+    "gui.proportionality.admin.unfrozen": "Đã hủy đóng băng",
     "gui.done": "Xong"
 }

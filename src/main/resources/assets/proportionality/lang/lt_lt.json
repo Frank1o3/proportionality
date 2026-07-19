@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Proporcingumas",
+    "key.proportionality.open_scale_screen": "Atidaryti mastelio ekraną",
+    "gui.proportionality.scale.title": "Mastelis",
+    "gui.proportionality.scale.label": "Mastelis",
+    "gui.proportionality.scale.reset": "Atkurti",
+    "gui.proportionality.admin.open": "Administratoriaus skydelis",
+    "gui.proportionality.admin.title": "Administratoriaus skydelis",
+    "gui.proportionality.admin.player": "Žaidėjas",
+    "gui.proportionality.admin.player_hint": "Įveskite žaidėjo vardą…",
+    "gui.proportionality.admin.lookup": "Ieškoti",
+    "gui.proportionality.admin.apply": "Taikyti",
+    "gui.proportionality.admin.frozen": "Užšaldytas",
+    "gui.proportionality.admin.unfrozen": "Atšaldytas",
+    "gui.done": "Atlikta"
+}

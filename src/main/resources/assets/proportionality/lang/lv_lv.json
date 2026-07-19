@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Proporcionalitāte",
+    "key.proportionality.open_scale_screen": "Atvērt mēroga ekrānu",
+    "gui.proportionality.scale.title": "Mērogs",
+    "gui.proportionality.scale.label": "Mērogs",
+    "gui.proportionality.scale.reset": "Atiestatīt",
+    "gui.proportionality.admin.open": "Administratora panelis",
+    "gui.proportionality.admin.title": "Administratora panelis",
+    "gui.proportionality.admin.player": "Spēlētājs",
+    "gui.proportionality.admin.player_hint": "Ievadiet spēlētāja vārdu…",
+    "gui.proportionality.admin.lookup": "Meklēt",
+    "gui.proportionality.admin.apply": "Lietot",
+    "gui.proportionality.admin.frozen": "Iesaldēts",
+    "gui.proportionality.admin.unfrozen": "Atkausēts",
+    "gui.done": "Gatavs"
+}

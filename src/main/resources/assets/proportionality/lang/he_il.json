@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "פרופורציונליות",
+    "key.proportionality.open_scale_screen": "פתיחת מסך קנה מידה",
+    "gui.proportionality.scale.title": "קנה מידה",
+    "gui.proportionality.scale.label": "קנה מידה",
+    "gui.proportionality.scale.reset": "איפוס",
+    "gui.proportionality.admin.open": "לוח מנהל",
+    "gui.proportionality.admin.title": "לוח מנהל",
+    "gui.proportionality.admin.player": "שחקן",
+    "gui.proportionality.admin.player_hint": "הזן שם שחקן…",
+    "gui.proportionality.admin.lookup": "חיפוש",
+    "gui.proportionality.admin.apply": "החל",
+    "gui.proportionality.admin.frozen": "מוקפא",
+    "gui.proportionality.admin.unfrozen": "לא מוקפא",
+    "gui.done": "סיום"
+}

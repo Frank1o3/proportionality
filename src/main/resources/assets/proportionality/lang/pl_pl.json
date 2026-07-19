@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Skala",
     "gui.proportionality.scale.label": "Skala",
     "gui.proportionality.scale.reset": "Resetuj",
+    "gui.proportionality.admin.open": "Panel administratora",
+    "gui.proportionality.admin.title": "Panel administratora",
+    "gui.proportionality.admin.player": "Gracz",
+    "gui.proportionality.admin.player_hint": "Wpisz nazwę gracza…",
+    "gui.proportionality.admin.lookup": "Wyszukaj",
+    "gui.proportionality.admin.apply": "Zastosuj",
+    "gui.proportionality.admin.frozen": "Zamrożony",
+    "gui.proportionality.admin.unfrozen": "Odmrożony",
     "gui.done": "Gotowe"
 }

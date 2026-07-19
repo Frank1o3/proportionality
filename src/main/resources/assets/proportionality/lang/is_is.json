@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Hlutfallsleiki",
+    "key.proportionality.open_scale_screen": "Opna kvarðaskjá",
+    "gui.proportionality.scale.title": "Kvarði",
+    "gui.proportionality.scale.label": "Kvarði",
+    "gui.proportionality.scale.reset": "Endurstilla",
+    "gui.proportionality.admin.open": "Stjórnborð stjórnanda",
+    "gui.proportionality.admin.title": "Stjórnborð stjórnanda",
+    "gui.proportionality.admin.player": "Leikmaður",
+    "gui.proportionality.admin.player_hint": "Sláðu inn nafn leikmanns…",
+    "gui.proportionality.admin.lookup": "Leita",
+    "gui.proportionality.admin.apply": "Nota",
+    "gui.proportionality.admin.frozen": "Frystur",
+    "gui.proportionality.admin.unfrozen": "Ófrystur",
+    "gui.done": "Lokið"
+}

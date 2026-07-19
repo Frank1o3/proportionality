@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Масштаб",
     "gui.proportionality.scale.label": "Масштаб",
     "gui.proportionality.scale.reset": "Скинути",
+    "gui.proportionality.admin.open": "Панель адміністратора",
+    "gui.proportionality.admin.title": "Панель адміністратора",
+    "gui.proportionality.admin.player": "Гравець",
+    "gui.proportionality.admin.player_hint": "Введіть ім'я гравця…",
+    "gui.proportionality.admin.lookup": "Пошук",
+    "gui.proportionality.admin.apply": "Застосувати",
+    "gui.proportionality.admin.frozen": "Заморожено",
+    "gui.proportionality.admin.unfrozen": "Розморожено",
     "gui.done": "Готово"
 }

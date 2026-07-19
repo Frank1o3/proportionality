@@ -1,8 +1,16 @@
 {
     "key.category.proportionality.main": "Пропорциональность",
-    "key.proportionality.open_scale_screen": "Открыть экран масштабирования",
+    "key.proportionality.open_scale_screen": "Открыть экран масштаба",
     "gui.proportionality.scale.title": "Масштаб",
     "gui.proportionality.scale.label": "Масштаб",
     "gui.proportionality.scale.reset": "Сбросить",
+    "gui.proportionality.admin.open": "Панель администратора",
+    "gui.proportionality.admin.title": "Панель администратора",
+    "gui.proportionality.admin.player": "Игрок",
+    "gui.proportionality.admin.player_hint": "Введите имя игрока…",
+    "gui.proportionality.admin.lookup": "Найти",
+    "gui.proportionality.admin.apply": "Применить",
+    "gui.proportionality.admin.frozen": "Заморожен",
+    "gui.proportionality.admin.unfrozen": "Разморожен",
     "gui.done": "Готово"
 }

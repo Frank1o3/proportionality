@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "Ouvrir l'écran d'échelle",
     "gui.proportionality.scale.title": "Échelle",
     "gui.proportionality.scale.label": "Échelle",
+    "gui.proportionality.scale.reset": "Réinitialiser",
+    "gui.proportionality.admin.open": "Panneau d'administration",
+    "gui.proportionality.admin.title": "Panneau d'administration",
+    "gui.proportionality.admin.player": "Joueur",
+    "gui.proportionality.admin.player_hint": "Entrez le nom du joueur…",
+    "gui.proportionality.admin.lookup": "Rechercher",
+    "gui.proportionality.admin.apply": "Appliquer",
+    "gui.proportionality.admin.frozen": "Gelé",
+    "gui.proportionality.admin.unfrozen": "Dégelé",
     "gui.done": "Terminé"
 }

@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Proporcionalita",
+    "key.proportionality.open_scale_screen": "Otvoriť obrazovku mierky",
+    "gui.proportionality.scale.title": "Mierka",
+    "gui.proportionality.scale.label": "Mierka",
+    "gui.proportionality.scale.reset": "Obnoviť",
+    "gui.proportionality.admin.open": "Panel administrátora",
+    "gui.proportionality.admin.title": "Panel administrátora",
+    "gui.proportionality.admin.player": "Hráč",
+    "gui.proportionality.admin.player_hint": "Zadajte meno hráča…",
+    "gui.proportionality.admin.lookup": "Vyhľadať",
+    "gui.proportionality.admin.apply": "Použiť",
+    "gui.proportionality.admin.frozen": "Zmrazený",
+    "gui.proportionality.admin.unfrozen": "Rozmrazený",
+    "gui.done": "Hotovo"
+}

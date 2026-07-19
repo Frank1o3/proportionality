@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "เปิดหน้าจอมาตราส่วน",
     "gui.proportionality.scale.title": "มาตราส่วน",
     "gui.proportionality.scale.label": "มาตราส่วน",
+    "gui.proportionality.scale.reset": "รีเซ็ต",
+    "gui.proportionality.admin.open": "แผงควบคุมผู้ดูแลระบบ",
+    "gui.proportionality.admin.title": "แผงควบคุมผู้ดูแลระบบ",
+    "gui.proportionality.admin.player": "ผู้เล่น",
+    "gui.proportionality.admin.player_hint": "ป้อนชื่อผู้เล่น…",
+    "gui.proportionality.admin.lookup": "ค้นหา",
+    "gui.proportionality.admin.apply": "นำไปใช้",
+    "gui.proportionality.admin.frozen": "ถูกแช่แข็ง",
+    "gui.proportionality.admin.unfrozen": "ยกเลิกการแช่แข็ง",
     "gui.done": "เสร็จสิ้น"
 }

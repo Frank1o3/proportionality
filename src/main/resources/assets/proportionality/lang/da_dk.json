@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Skalering",
     "gui.proportionality.scale.label": "Skalering",
     "gui.proportionality.scale.reset": "Nulstil",
+    "gui.proportionality.admin.open": "Admin-panel",
+    "gui.proportionality.admin.title": "Admin-panel",
+    "gui.proportionality.admin.player": "Spiller",
+    "gui.proportionality.admin.player_hint": "Indtast spillernavn…",
+    "gui.proportionality.admin.lookup": "Søg",
+    "gui.proportionality.admin.apply": "Anvend",
+    "gui.proportionality.admin.frozen": "Frosset",
+    "gui.proportionality.admin.unfrozen": "Optøet",
     "gui.done": "Udført"
 }

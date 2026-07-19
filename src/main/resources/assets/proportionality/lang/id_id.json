@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "Buka Layar Skala",
     "gui.proportionality.scale.title": "Skala",
     "gui.proportionality.scale.label": "Skala",
+    "gui.proportionality.scale.reset": "Atur Ulang",
+    "gui.proportionality.admin.open": "Panel Admin",
+    "gui.proportionality.admin.title": "Panel Admin",
+    "gui.proportionality.admin.player": "Pemain",
+    "gui.proportionality.admin.player_hint": "Masukkan nama pemain…",
+    "gui.proportionality.admin.lookup": "Cari",
+    "gui.proportionality.admin.apply": "Terapkan",
+    "gui.proportionality.admin.frozen": "Dibekukan",
+    "gui.proportionality.admin.unfrozen": "Tidak Dibekukan",
     "gui.done": "Selesai"
 }

@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Αναλογικότητα",
+    "key.proportionality.open_scale_screen": "Άνοιγμα οθόνης κλίμακας",
+    "gui.proportionality.scale.title": "Κλίμακα",
+    "gui.proportionality.scale.label": "Κλίμακα",
+    "gui.proportionality.scale.reset": "Επαναφορά",
+    "gui.proportionality.admin.open": "Πίνακας διαχειριστή",
+    "gui.proportionality.admin.title": "Πίνακας διαχειριστή",
+    "gui.proportionality.admin.player": "Παίκτης",
+    "gui.proportionality.admin.player_hint": "Εισαγάγετε το όνομα παίκτη…",
+    "gui.proportionality.admin.lookup": "Αναζήτηση",
+    "gui.proportionality.admin.apply": "Εφαρμογή",
+    "gui.proportionality.admin.frozen": "Παγωμένος",
+    "gui.proportionality.admin.unfrozen": "Ξεπαγωμένος",
+    "gui.done": "Τέλος"
+}

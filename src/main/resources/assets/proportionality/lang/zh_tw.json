@@ -1,7 +1,16 @@
 {
-    "key.category.proportionality.main": "比例性",
-    "key.proportionality.open_scale_screen": "開啟比例畫面",
-    "gui.proportionality.scale.title": "比例",
-    "gui.proportionality.scale.label": "比例",
+    "key.category.proportionality.main": "比例",
+    "key.proportionality.open_scale_screen": "開啟縮放介面",
+    "gui.proportionality.scale.title": "縮放",
+    "gui.proportionality.scale.label": "縮放",
+    "gui.proportionality.scale.reset": "重設",
+    "gui.proportionality.admin.open": "管理員面板",
+    "gui.proportionality.admin.title": "管理員面板",
+    "gui.proportionality.admin.player": "玩家",
+    "gui.proportionality.admin.player_hint": "輸入玩家名稱…",
+    "gui.proportionality.admin.lookup": "查找",
+    "gui.proportionality.admin.apply": "套用",
+    "gui.proportionality.admin.frozen": "已凍結",
+    "gui.proportionality.admin.unfrozen": "已解除凍結",
     "gui.done": "完成"
 }

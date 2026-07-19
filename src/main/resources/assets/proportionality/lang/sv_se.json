@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Skala",
     "gui.proportionality.scale.label": "Skala",
     "gui.proportionality.scale.reset": "Återställ",
+    "gui.proportionality.admin.open": "Adminpanel",
+    "gui.proportionality.admin.title": "Adminpanel",
+    "gui.proportionality.admin.player": "Spelare",
+    "gui.proportionality.admin.player_hint": "Ange spelarnamn…",
+    "gui.proportionality.admin.lookup": "Sök",
+    "gui.proportionality.admin.apply": "Verkställ",
+    "gui.proportionality.admin.frozen": "Fryst",
+    "gui.proportionality.admin.unfrozen": "Upptinad",
     "gui.done": "Klar"
 }

@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "प्रोपोर्शनैलिटी",
+    "key.proportionality.open_scale_screen": "स्केल स्क्रीन खोलें",
+    "gui.proportionality.scale.title": "स्केल",
+    "gui.proportionality.scale.label": "स्केल",
+    "gui.proportionality.scale.reset": "रीसेट",
+    "gui.proportionality.admin.open": "व्यवस्थापक पैनल",
+    "gui.proportionality.admin.title": "व्यवस्थापक पैनल",
+    "gui.proportionality.admin.player": "खिलाड़ी",
+    "gui.proportionality.admin.player_hint": "खिलाड़ी का नाम दर्ज करें…",
+    "gui.proportionality.admin.lookup": "खोजें",
+    "gui.proportionality.admin.apply": "लागू करें",
+    "gui.proportionality.admin.frozen": "जमा हुआ",
+    "gui.proportionality.admin.unfrozen": "जमा हुआ नहीं",
+    "gui.done": "हो गया"
+}

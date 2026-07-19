@@ -47,6 +47,9 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
+      - name: Validate language files
+        run: python3 scripts/validate_lang.py
+
       - name: Build with Gradle
         run: ./gradlew build
 

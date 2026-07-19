@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Měřítko",
     "gui.proportionality.scale.label": "Měřítko",
     "gui.proportionality.scale.reset": "Resetovat",
+    "gui.proportionality.admin.open": "Administrátorský panel",
+    "gui.proportionality.admin.title": "Administrátorský panel",
+    "gui.proportionality.admin.player": "Hráč",
+    "gui.proportionality.admin.player_hint": "Zadejte jméno hráče…",
+    "gui.proportionality.admin.lookup": "Vyhledat",
+    "gui.proportionality.admin.apply": "Použít",
+    "gui.proportionality.admin.frozen": "Zmrazen",
+    "gui.proportionality.admin.unfrozen": "Odmrazen",
     "gui.done": "Hotovo"
 }

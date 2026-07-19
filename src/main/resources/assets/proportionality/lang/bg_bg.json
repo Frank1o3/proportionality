@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Пропорционалност",
+    "key.proportionality.open_scale_screen": "Отваряне на екрана за мащабиране",
+    "gui.proportionality.scale.title": "Мащаб",
+    "gui.proportionality.scale.label": "Мащаб",
+    "gui.proportionality.scale.reset": "Нулиране",
+    "gui.proportionality.admin.open": "Административен панел",
+    "gui.proportionality.admin.title": "Административен панел",
+    "gui.proportionality.admin.player": "Играч",
+    "gui.proportionality.admin.player_hint": "Въведете името на играча…",
+    "gui.proportionality.admin.lookup": "Търсене",
+    "gui.proportionality.admin.apply": "Прилагане",
+    "gui.proportionality.admin.frozen": "Замразен",
+    "gui.proportionality.admin.unfrozen": "Размразен",
+    "gui.done": "Готово"
+}

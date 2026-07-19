@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "Schaalscherm openen",
     "gui.proportionality.scale.title": "Schaal",
     "gui.proportionality.scale.label": "Schaal",
+    "gui.proportionality.scale.reset": "Resetten",
+    "gui.proportionality.admin.open": "Beheerderspaneel",
+    "gui.proportionality.admin.title": "Beheerderspaneel",
+    "gui.proportionality.admin.player": "Speler",
+    "gui.proportionality.admin.player_hint": "Voer de spelersnaam in…",
+    "gui.proportionality.admin.lookup": "Opzoeken",
+    "gui.proportionality.admin.apply": "Toepassen",
+    "gui.proportionality.admin.frozen": "Bevroren",
+    "gui.proportionality.admin.unfrozen": "Niet bevroren",
     "gui.done": "Klaar"
 }

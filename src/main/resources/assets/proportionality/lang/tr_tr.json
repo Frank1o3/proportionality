@@ -4,5 +4,13 @@
     "gui.proportionality.scale.title": "Ölçek",
     "gui.proportionality.scale.label": "Ölçek",
     "gui.proportionality.scale.reset": "Sıfırla",
+    "gui.proportionality.admin.open": "Yönetici Paneli",
+    "gui.proportionality.admin.title": "Yönetici Paneli",
+    "gui.proportionality.admin.player": "Oyuncu",
+    "gui.proportionality.admin.player_hint": "Oyuncu adını girin…",
+    "gui.proportionality.admin.lookup": "Sorgula",
+    "gui.proportionality.admin.apply": "Uygula",
+    "gui.proportionality.admin.frozen": "Dondurulmuş",
+    "gui.proportionality.admin.unfrozen": "Dondurulmamış",
     "gui.done": "Tamam"
 }

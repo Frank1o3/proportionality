@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Proportsionaalsus",
+    "key.proportionality.open_scale_screen": "Ava skaalaekraan",
+    "gui.proportionality.scale.title": "Skaala",
+    "gui.proportionality.scale.label": "Skaala",
+    "gui.proportionality.scale.reset": "Lähtesta",
+    "gui.proportionality.admin.open": "Administraatori paneel",
+    "gui.proportionality.admin.title": "Administraatori paneel",
+    "gui.proportionality.admin.player": "Mängija",
+    "gui.proportionality.admin.player_hint": "Sisesta mängija nimi…",
+    "gui.proportionality.admin.lookup": "Otsi",
+    "gui.proportionality.admin.apply": "Rakenda",
+    "gui.proportionality.admin.frozen": "Külmutatud",
+    "gui.proportionality.admin.unfrozen": "Külmutamata",
+    "gui.done": "Valmis"
+}

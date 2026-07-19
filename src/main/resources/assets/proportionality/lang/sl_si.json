@@ -1,0 +1,16 @@
+{
+    "key.category.proportionality.main": "Sorazmernost",
+    "key.proportionality.open_scale_screen": "Odpri zaslon za merilo",
+    "gui.proportionality.scale.title": "Merilo",
+    "gui.proportionality.scale.label": "Merilo",
+    "gui.proportionality.scale.reset": "Ponastavi",
+    "gui.proportionality.admin.open": "Skrbniška plošča",
+    "gui.proportionality.admin.title": "Skrbniška plošča",
+    "gui.proportionality.admin.player": "Igralec",
+    "gui.proportionality.admin.player_hint": "Vnesite ime igralca…",
+    "gui.proportionality.admin.lookup": "Poišči",
+    "gui.proportionality.admin.apply": "Uporabi",
+    "gui.proportionality.admin.frozen": "Zamrznjen",
+    "gui.proportionality.admin.unfrozen": "Odmrznjen",
+    "gui.done": "Končano"
+}

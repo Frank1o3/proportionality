@@ -3,5 +3,14 @@
     "key.proportionality.open_scale_screen": "Deschide ecranul de scalare",
     "gui.proportionality.scale.title": "Scalare",
     "gui.proportionality.scale.label": "Scalare",
+    "gui.proportionality.scale.reset": "Resetează",
+    "gui.proportionality.admin.open": "Panou de administrare",
+    "gui.proportionality.admin.title": "Panou de administrare",
+    "gui.proportionality.admin.player": "Jucător",
+    "gui.proportionality.admin.player_hint": "Introdu numele jucătorului…",
+    "gui.proportionality.admin.lookup": "Caută",
+    "gui.proportionality.admin.apply": "Aplică",
+    "gui.proportionality.admin.frozen": "Înghețat",
+    "gui.proportionality.admin.unfrozen": "Dezghețat",
     "gui.done": "Gata"
 }
