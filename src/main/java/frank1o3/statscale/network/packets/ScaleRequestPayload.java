@@ -1,4 +1,4 @@
-package frank1o3.statscale.network;
+package frank1o3.statscale.network.packets;
 
 import frank1o3.statscale.Proportionality;
 import net.minecraft.network.FriendlyByteBuf;
@@ -10,7 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *
  * <p>
  * Sent when the player commits a new scale value from the
- * {@link frank1o3.statscale.client.gui.ScaleScreen}.
+ * {@link frank1o3.statscale.client.gui.screen.ScaleScreen}.
  * The server validates the value against the server-configured maximum, applies
  * it through
  * the existing attribute pipeline, and persists it via
@@ -21,7 +21,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *              this to its own configured maximum, so the client never needs to
  *              enforce the cap.
  */
-public record ScaleRequestPayload(float scale) implements CustomPacketPayload {
+public record ScaleRequestPayload(double scale) implements CustomPacketPayload {
 
         /** Unique identifier registered on both sides during mod initialisation. */
         public static final CustomPacketPayload.Type<ScaleRequestPayload> TYPE = new CustomPacketPayload.Type<>(
@@ -34,8 +34,8 @@ public record ScaleRequestPayload(float scale) implements CustomPacketPayload {
          * minimal.
          */
         public static final StreamCodec<FriendlyByteBuf, ScaleRequestPayload> CODEC = StreamCodec.of(
-                        (buf, payload) -> buf.writeFloat(payload.scale),
-                        buf -> new ScaleRequestPayload(buf.readFloat()));
+                        (buf, payload) -> buf.writeDouble(payload.scale),
+                        buf -> new ScaleRequestPayload(buf.readDouble()));
 
         @Override
         public CustomPacketPayload.Type<ScaleRequestPayload> type() {

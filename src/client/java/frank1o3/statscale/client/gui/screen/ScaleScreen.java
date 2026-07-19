@@ -1,13 +1,16 @@
-package frank1o3.statscale.client.gui;
+package frank1o3.statscale.client.gui.screen;
 
 import frank1o3.statscale.client.ScaleClientState;
+import frank1o3.statscale.client.gui.ScaleButton;
+import frank1o3.statscale.client.gui.ScaleSlider;
 import frank1o3.statscale.client.network.ClientScaleNetwork;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.Permissions;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,7 +63,7 @@ public class ScaleScreen extends Screen {
     /** Width of the panel background in pixels. */
     private static final int PANEL_WIDTH = 220;
     /** Height of the panel background in pixels. */
-    private static final int PANEL_HEIGHT = 96;
+    private static final int PANEL_HEIGHT = 140;
 
     /** Width of the slider widget. Fits neatly inside PANEL_WIDTH with padding. */
     private static final int SLIDER_WIDTH = 180;
@@ -166,21 +169,29 @@ public class ScaleScreen extends Screen {
         int resetX = doneX + BUTTON_WIDTH + BUTTON_GAP;
 
         // Done
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.done"),
-                btn -> onClose())
+        addRenderableWidget(ScaleButton.builder()
                 .bounds(doneX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .message(Component.translatable("gui.done"))
+                .onPress(btn -> onClose())
                 .build());
 
         // Reset — sends scale 1.0 to the server and snaps the slider visually.
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.proportionality.scale.reset"),
-                btn -> {
+        addRenderableWidget(ScaleButton.builder()
+                .bounds(resetX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .message(Component.translatable("gui.proportionality.scale.reset"))
+                .onPress(btn -> {
                     ClientScaleNetwork.sendResetRequest();
                     slider.setValue(1.0);
                 })
-                .bounds(resetX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build());
+
+        if (minecraft.player != null && minecraft.player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)) {
+            addRenderableWidget(ScaleButton.builder()
+                    .bounds(cx - 40, buttonsY + BUTTON_HEIGHT + 6, 80, 18)
+                    .message(Component.translatable("gui.proportionality.admin.open"))
+                    .onPress(btn -> minecraft.gui.setScreen(new AdminScaleScreen(this)))
+                    .build());
+        }
     }
 
     // -------------------------------------------------------------------------

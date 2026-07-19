@@ -23,7 +23,12 @@
 			"frank1o3.statscale.client.ProportionalityClient"
 		]
 	},
-	"mixins": [],
+	"mixins": [
+		{
+			"config": "proportionality.client.mixins.json",
+			"environment": "client"
+		}
+	],
 	"depends": {
 		"fabricloader": ">=0.19.3",
 		"minecraft": "~26.2",

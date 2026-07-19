@@ -2,6 +2,7 @@ package frank1o3.statscale.storage;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import frank1o3.statscale.Proportionality;
@@ -17,16 +18,16 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Persists player scale values in a single JSON file located at
- * {@code <world>/data/proportionality_scales.json}.
+ * Persists player scale values (and freeze state) in a single JSON file
+ * located at {@code <world>/data/proportionality_scales.json}.
  *
  * <p>
  * Layout on disk:
- * 
+ *
  * <pre>
  * {
- *   "550e8400-e29b-41d4-a716-446655440000": 3.5,
- *   "6ba7b810-9dad-11d1-80b4-00c04fd430c8": 1.0
+ *   "550e8400-e29b-41d4-a716-446655440000": { "scale": 3.5, "frozen": false },
+ *   "6ba7b810-9dad-11d1-80b4-00c04fd430c8": { "scale": 1.0, "frozen": true }
  * }
  * </pre>
  *
@@ -40,39 +41,34 @@ public final class ScaleStorage {
     // Constants
     // -------------------------------------------------------------------------
 
-    /** Default scale applied to any player whose UUID is not in the file. */
-    public static final double DEFAULT_SCALE = 1.0f;
-
-    /** File name written inside the world's {@code data/} directory. */
+    public static final double DEFAULT_SCALE = 1.0;
     private static final String FILE_NAME = "proportionality_scales.json";
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    // -------------------------------------------------------------------------
+    // Data record
+    // -------------------------------------------------------------------------
+
+    /**
+     * A player's persisted scale plus whether an operator has frozen it against
+     * further self-service changes via {@code /scale set} or the scale screen.
+     */
+    public record PlayerScaleData(double scale, boolean frozen) {
+        public static final PlayerScaleData DEFAULT = new PlayerScaleData(DEFAULT_SCALE, false);
+    }
 
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
 
-    /** In-memory mirror of the on-disk JSON. Keyed by player UUID. */
-    private final Map<UUID, Double> scales = new HashMap<>();
-
-    /** Absolute path to the JSON file, resolved once at construction time. */
+    private final Map<UUID, PlayerScaleData> data = new HashMap<>();
     private final Path filePath;
 
     // -------------------------------------------------------------------------
     // Construction
     // -------------------------------------------------------------------------
 
-    /**
-     * Creates a {@link ScaleStorage} bound to the given server's world directory.
-     * Call {@link #load()} immediately after construction to populate the in-memory
-     * map.
-     *
-     * @param server The running {@link MinecraftServer} used to locate the world
-     *               data folder.
-     */
     public ScaleStorage(MinecraftServer server) {
-        // getLevelStorageAccess().getLevelDirectory().path() gives us <world>/
-        // We place our file in <world>/data/ alongside other Minecraft data files.
         Path dataDir = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("data");
         this.filePath = dataDir.resolve(FILE_NAME);
     }
@@ -82,12 +78,16 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     /**
-     * Reads the JSON file from disk into the in-memory map.
-     * Called once when the server starts (world loads).
-     * Safe to call even if the file does not yet exist.
+     * Reads the JSON file from disk into the in-memory map. Called once when the
+     * server starts. Safe to call even if the file does not yet exist.
+     *
+     * <p>
+     * Also transparently migrates the old pre-freeze format, where each entry
+     * was a bare number instead of an object, so existing worlds don't lose
+     * their saved scales when upgrading.
      */
     public void load() {
-        scales.clear();
+        data.clear();
 
         if (!Files.exists(filePath)) {
             Proportionality.LOGGER.info("[Proportionality] No scale data file found at {}; starting fresh.", filePath);
@@ -99,27 +99,32 @@ public final class ScaleStorage {
             root.entrySet().forEach(entry -> {
                 try {
                     UUID uuid = UUID.fromString(entry.getKey());
-                    double scale = entry.getValue().getAsDouble();
-                    scales.put(uuid, scale);
-                } catch (IllegalArgumentException e) {
+                    JsonElement value = entry.getValue();
+
+                    PlayerScaleData parsed;
+                    if (value.isJsonPrimitive()) {
+                        // Legacy format: bare number, never frozen.
+                        parsed = new PlayerScaleData(value.getAsDouble(), false);
+                    } else {
+                        JsonObject obj = value.getAsJsonObject();
+                        double scale = obj.has("scale") ? obj.get("scale").getAsDouble() : DEFAULT_SCALE;
+                        boolean frozen = obj.has("frozen") && obj.get("frozen").getAsBoolean();
+                        parsed = new PlayerScaleData(scale, frozen);
+                    }
+                    data.put(uuid, parsed);
+                } catch (IllegalArgumentException | IllegalStateException e) {
                     Proportionality.LOGGER.warn(
                             "[Proportionality] Skipping malformed entry '{}' in scale data file.", entry.getKey());
                 }
             });
-            Proportionality.LOGGER.info("[Proportionality] Loaded scale data for {} player(s).", scales.size());
+            Proportionality.LOGGER.info("[Proportionality] Loaded scale data for {} player(s).", data.size());
         } catch (IOException e) {
             Proportionality.LOGGER.error("[Proportionality] Failed to read scale data file: {}", e.getMessage());
         }
     }
 
-    /**
-     * Writes the current in-memory map back to disk.
-     * Called automatically by {@link #setScale(UUID, float)}, and again when the
-     * server stops.
-     */
+    /** Writes the current in-memory map back to disk. */
     public void save() {
-        // Ensure the data directory exists (it always should on a running server, but
-        // be safe).
         try {
             Files.createDirectories(filePath.getParent());
         } catch (IOException e) {
@@ -128,7 +133,12 @@ public final class ScaleStorage {
         }
 
         JsonObject root = new JsonObject();
-        scales.forEach((uuid, scale) -> root.addProperty(uuid.toString(), scale));
+        data.forEach((uuid, value) -> {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("scale", value.scale());
+            entry.addProperty("frozen", value.frozen());
+            root.add(uuid.toString(), entry);
+        });
 
         try (Writer writer = Files.newBufferedWriter(filePath)) {
             GSON.toJson(root, writer);
@@ -142,27 +152,57 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the saved scale for the given player, or {@link #DEFAULT_SCALE} if no
-     * entry exists (first-time player, or data was cleared).
-     *
-     * @param uuid The player's unique identifier.
-     * @return The stored scale value, always positive and at least
-     *         {@link #DEFAULT_SCALE}.
+     * Returns the saved scale + freeze state for the given player, defaulting if
+     * absent.
      */
+    public PlayerScaleData get(UUID uuid) {
+        return data.getOrDefault(uuid, PlayerScaleData.DEFAULT);
+    }
+
     public double getScale(UUID uuid) {
-        return scales.getOrDefault(uuid, DEFAULT_SCALE);
+        return get(uuid).scale();
+    }
+
+    public boolean isFrozen(UUID uuid) {
+        return get(uuid).frozen();
     }
 
     /**
-     * Persists a new scale for the given player.
-     * Immediately writes the updated map to disk so no data is lost on a crash.
+     * Persists a new scale for the given player via the normal (non-admin) path.
      *
-     * @param uuid  The player's unique identifier.
-     * @param scale The scale value to store. Should already be validated/clamped by
-     *              the caller.
+     * <p>
+     * <b>This is the actual security boundary for freezing:</b> if the player is
+     * currently frozen, the request is silently dropped rather than applied.
+     * Callers (the packet handler, commands) should still bail out early on
+     * their own if they want to skip network round-trips, but this method is
+     * the last line of defence regardless of what any client sends.
+     *
+     * @return {@code true} if the scale was actually applied, {@code false} if
+     *         it was rejected because the player is frozen.
      */
-    public void setScale(UUID uuid, double scale) {
-        scales.put(uuid, scale);
-        save(); // write-through: every change is immediately durable
+    public boolean setScale(UUID uuid, double scale) {
+        if (isFrozen(uuid)) {
+            return false;
+        }
+        data.put(uuid, new PlayerScaleData(scale, false));
+        save();
+        return true;
+    }
+
+    /**
+     * Operator-only path: sets both the scale and the freeze flag directly,
+     * bypassing the freeze check above. Callers of this method are responsible
+     * for having already verified operator/moderator permission.
+     */
+    public void adminSetScale(UUID uuid, double scale, boolean frozen) {
+        data.put(uuid, new PlayerScaleData(scale, frozen));
+        save();
+    }
+
+    /** Operator-only: toggles freeze without changing the stored scale. */
+    public void setFrozen(UUID uuid, boolean frozen) {
+        PlayerScaleData current = get(uuid);
+        data.put(uuid, new PlayerScaleData(current.scale(), frozen));
+        save();
     }
 }

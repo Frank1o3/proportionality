@@ -1,11 +1,21 @@
 package frank1o3.statscale.network;
 
 import frank1o3.statscale.core.HandleCallbacks;
+import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
+import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
+import frank1o3.statscale.network.packets.AdminScaleSetPayload;
+import frank1o3.statscale.network.packets.ScaleRequestPayload;
+import frank1o3.statscale.network.packets.ScaleSyncPayload;
+
+import java.util.UUID;
+
 import frank1o3.statscale.Proportionality;
 import frank1o3.statscale.storage.ScaleStorage;
 import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -82,23 +92,24 @@ public final class ScalePacketHandler {
             ScaleStorage storage,
             ServerScaleConfig config) {
 
-        // 1. Validate + clamp (never trust the client)
-        float requested = payload.scale();
         double attributeMax = resolveAttributeMax(player);
         double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
+
+        // 0. Frozen players cannot change their own scale, full stop — regardless
+        // of what value the client sends or how the request was triggered.
+        if (storage.isFrozen(player.getUUID())) {
+            Proportionality.LOGGER.debug(
+                    "[Proportionality] Ignored scale request from {}: player is frozen.",
+                    player.getName().getString());
+            ServerPlayNetworking.send(player, new ScaleSyncPayload(storage.getScale(player.getUUID()), effectiveMax));
+            return;
+        }
+
+        double requested = payload.scale();
         double clamped = Mth.clamp(requested, SERVER_MIN_SCALE, effectiveMax);
 
-        Proportionality.LOGGER.debug(
-                "[Proportionality] {} requested scale {}; clamped to {} (max={})",
-                player.getName().getString(), requested, clamped, effectiveMax);
-
-        // 2. Apply the full attribute profile
         HandleCallbacks.applyScaleProfile(player, clamped, effectiveMax, config);
-
-        // 3. Persist
-        storage.setScale(player.getUUID(), clamped);
-
-        // 4. Confirm back to client
+        storage.setScale(player.getUUID(), clamped); // guaranteed to succeed; already checked frozen above
         ServerPlayNetworking.send(player, new ScaleSyncPayload(clamped, effectiveMax));
     }
 
@@ -112,7 +123,7 @@ public final class ScalePacketHandler {
      * with accurate values regardless of what the default slider range would be.
      *
      * <p>
-     * If the player has no saved scale the {@link ScaleStorage#DEFAULT_SCALE}
+     * If the player has no saved scale the {@link ScaleStorage}
      * is used and applied so their attributes match the stored value.
      *
      * @param player  The joining player.
@@ -120,14 +131,14 @@ public final class ScalePacketHandler {
      * @param config  The active {@link ServerScaleConfig} instance.
      */
     public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config) {
-        double saved = storage.getScale(player.getUUID());
+        ScaleStorage.PlayerScaleData saved = storage.get(player.getUUID());
         double attributeMax = resolveAttributeMax(player);
         double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
 
         // Re-apply on login so attributes are correct even after a server restart.
-        HandleCallbacks.applyScaleProfile(player, saved, effectiveMax, config);
+        HandleCallbacks.applyScaleProfile(player, saved.scale(), effectiveMax, config);
 
-        ServerPlayNetworking.send(player, new ScaleSyncPayload(saved, effectiveMax));
+        ServerPlayNetworking.send(player, new ScaleSyncPayload(saved.scale(), effectiveMax));
 
         Proportionality.LOGGER.debug(
                 "[Proportionality] Synced scale {} (max={}) to {}",
@@ -152,5 +163,89 @@ public final class ScalePacketHandler {
             }
         }
         return SERVER_MAX_SCALE;
+    }
+
+    // -------------------------------------------------------------------------
+    // Admin handlers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Handles an {@link AdminScaleQueryPayload}: resolves the named player (must
+     * be online) and reports back their current scale/freeze state.
+     *
+     * <p>
+     * Permission is re-checked here independently of anything the client's menu
+     * gating decided — an unauthorised client sending this packet directly gets
+     * silently ignored.
+     */
+    public static void handleAdminQuery(
+            AdminScaleQueryPayload payload,
+            ServerPlayer sender,
+            ScaleStorage storage,
+            MinecraftServer server) {
+
+        if (!hasAdminPermission(sender)) {
+            Proportionality.LOGGER.warn(
+                    "[Proportionality] {} attempted an admin scale query without permission.",
+                    sender.getName().getString());
+            return;
+        }
+
+        ServerPlayer target = server.getPlayerList().getPlayerByName(payload.targetName());
+        if (target == null) {
+            ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
+                    false, new UUID(0L, 0L), payload.targetName(), 0.0, 0.0, false));
+            return;
+        }
+
+        ScaleStorage.PlayerScaleData data = storage.get(target.getUUID());
+        double effectiveMax = Math.min(SERVER_MAX_SCALE, resolveAttributeMax(target));
+
+        ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
+                true, target.getUUID(), target.getName().getString(), data.scale(), effectiveMax, data.frozen()));
+    }
+
+    /**
+     * Handles an {@link AdminScaleSetPayload}: applies an operator-issued scale
+     * and freeze state to the target, bypassing the target's own freeze flag
+     * (that flag only blocks the target's *own* requests, not admin overrides).
+     */
+    public static void handleAdminSet(
+            AdminScaleSetPayload payload,
+            ServerPlayer sender,
+            ScaleStorage storage,
+            ServerScaleConfig config,
+            MinecraftServer server) {
+
+        if (!hasAdminPermission(sender)) {
+            Proportionality.LOGGER.warn(
+                    "[Proportionality] {} attempted an admin scale set without permission.",
+                    sender.getName().getString());
+            return;
+        }
+
+        ServerPlayer target = server.getPlayerList().getPlayer(payload.target());
+        double attributeMax = target != null ? resolveAttributeMax(target) : SERVER_MAX_SCALE;
+        double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
+        double clamped = Mth.clamp(payload.scale(), SERVER_MIN_SCALE, effectiveMax);
+
+        storage.adminSetScale(payload.target(), clamped, payload.frozen());
+
+        if (target != null) {
+            HandleCallbacks.applyScaleProfile(target, clamped, effectiveMax, config);
+            ServerPlayNetworking.send(target, new ScaleSyncPayload(clamped, effectiveMax));
+        }
+
+        Proportionality.LOGGER.info(
+                "[Proportionality] {} set {}'s scale to {} (frozen={}).",
+                sender.getName().getString(), payload.target(), clamped, payload.frozen());
+    }
+
+    // -------------------------------------------------------------------------
+    // Permission helper
+    // -------------------------------------------------------------------------
+
+    private static boolean hasAdminPermission(ServerPlayer player) {
+        return player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
     }
 }

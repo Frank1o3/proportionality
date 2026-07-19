@@ -1,4 +1,4 @@
-package frank1o3.statscale.network;
+package frank1o3.statscale.network.packets;
 
 import frank1o3.statscale.Proportionality;
 import net.minecraft.network.FriendlyByteBuf;

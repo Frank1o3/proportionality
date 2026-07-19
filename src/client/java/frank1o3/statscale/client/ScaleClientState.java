@@ -1,6 +1,6 @@
 package frank1o3.statscale.client;
 
-import frank1o3.statscale.network.ScaleSyncPayload;
+import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
@@ -58,7 +58,7 @@ public final class ScaleClientState {
     /**
      * Returns the maximum scale the current server allows.
      * Used to cap the slider range in
-     * {@link frank1o3.statscale.client.gui.ScaleScreen}.
+     * {@link frank1o3.statscale.client.gui.screen.ScaleScreen}.
      * Defaults to {@link #DEFAULT_MAX_SCALE} until the server sends a sync packet.
      */
     public static double getServerMaxScale() {

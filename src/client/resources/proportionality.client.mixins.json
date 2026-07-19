@@ -1,0 +1,11 @@
+{
+    "required": true,
+    "package": "frank1o3.statscale.client.mixin",
+    "compatibilityLevel": "JAVA_25",
+    "client": [
+        "accessors.InventoryScreenAccessor"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

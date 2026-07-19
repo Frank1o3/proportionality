@@ -1,9 +1,12 @@
 package frank1o3.statscale;
 
-import frank1o3.statscale.network.ScaleRequestPayload;
-import frank1o3.statscale.network.ScaleSyncPayload;
 import frank1o3.statscale.core.HandleCallbacks;
 import frank1o3.statscale.network.ScalePacketHandler;
+import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
+import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
+import frank1o3.statscale.network.packets.AdminScaleSetPayload;
+import frank1o3.statscale.network.packets.ScaleRequestPayload;
+import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import frank1o3.statscale.storage.ScaleStorage;
 import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.api.ModInitializer;
@@ -90,19 +93,29 @@ public class Proportionality implements ModInitializer {
      * This must happen before any packet is sent or received on either side.
      */
     private static void registerPackets() {
-        // C2S – client requests a scale change
+        // Existing C2S/S2C
         PayloadTypeRegistry.serverboundPlay().register(ScaleRequestPayload.TYPE, ScaleRequestPayload.CODEC);
-
-        // S2C – server pushes current scale + server max to the client
         PayloadTypeRegistry.clientboundPlay().register(ScaleSyncPayload.TYPE, ScaleSyncPayload.CODEC);
 
-        // Handle incoming scale requests on the server
+        // Admin C2S/S2C
+        PayloadTypeRegistry.serverboundPlay().register(AdminScaleQueryPayload.TYPE, AdminScaleQueryPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(AdminScaleSetPayload.TYPE, AdminScaleSetPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(AdminScaleInfoPayload.TYPE, AdminScaleInfoPayload.CODEC);
+
         ServerPlayNetworking.registerGlobalReceiver(
                 ScaleRequestPayload.TYPE,
-                (payload, context) -> {
-                    // context.player() is already on the server thread via Fabric's executor
-                    ScalePacketHandler.handleScaleRequest(payload, context.player(), storage, config);
-                });
+                (payload, context) -> ScalePacketHandler.handleScaleRequest(payload, context.player(), storage,
+                        config));
+
+        ServerPlayNetworking.registerGlobalReceiver(
+                AdminScaleQueryPayload.TYPE,
+                (payload, context) -> ScalePacketHandler.handleAdminQuery(
+                        payload, context.player(), storage, context.player().level().getServer()));
+
+        ServerPlayNetworking.registerGlobalReceiver(
+                AdminScaleSetPayload.TYPE,
+                (payload, context) -> ScalePacketHandler.handleAdminSet(
+                        payload, context.player(), storage, config, context.player().level().getServer()));
     }
 
     /** Loads storage when the world is ready and flushes it on shutdown. */
@@ -236,7 +249,8 @@ public class Proportionality implements ModInitializer {
         double clamped = Math.min(scale, attributeMax);
 
         HandleCallbacks.applyScaleProfile(target, clamped, attributeMax, config);
-        storage.setScale(target.getUUID(), clamped);
+        storage.adminSetScale(target.getUUID(), clamped, storage.isFrozen(target.getUUID())); // preserve existing
+                                                                                              // freeze state
         ServerPlayNetworking.send(target, new ScaleSyncPayload(clamped, attributeMax));
 
         source.sendSuccess(() -> Component.literal(

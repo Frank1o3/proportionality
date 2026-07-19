@@ -1,7 +1,7 @@
 package frank1o3.statscale.client;
 
 import frank1o3.statscale.Proportionality;
-import frank1o3.statscale.client.gui.ScaleScreen;
+import frank1o3.statscale.client.gui.screen.ScaleScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
