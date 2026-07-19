@@ -11,6 +11,7 @@ import frank1o3.statscale.network.packets.ScaleRequestPayload;
 import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 /**
@@ -37,6 +38,10 @@ public final class ClientScaleNetwork {
 
     /** The canonical default / reset scale value sent to the server. */
     private static final float RESET_SCALE = 1.0f;
+    private static final int DEBOUNCE_TICKS = 3; // ~150ms at 20 tps
+    private static boolean pending = false;
+    private static double pendingScale;
+    private static int ticksUntilFlush;
 
     private ClientScaleNetwork() {
         throw new UnsupportedOperationException("Utility class");
@@ -53,15 +58,14 @@ public final class ClientScaleNetwork {
     public static void register() {
         ClientPlayNetworking.registerGlobalReceiver(
                 ScaleSyncPayload.TYPE,
-                (payload, context) -> {
-                    // context.client().execute() marshals onto the render/main client thread.
-                    context.client().execute(
-                            () -> ScaleClientState.applySync(payload.currentScale(), payload.serverMaxScale()));
-                });
+                (payload, context) -> context.client().execute(
+                        () -> ScaleClientState.applySync(payload.currentScale(), payload.serverMaxScale())));
         ClientPlayNetworking.registerGlobalReceiver(AdminScaleInfoPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> AdminScaleClientState.applyInfo(
                         payload.found(), payload.target(), payload.name(), payload.scale(), payload.serverMaxScale(),
                         payload.frozen())));
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> tickDebounce());
     }
 
     // -------------------------------------------------------------------------
@@ -83,8 +87,10 @@ public final class ClientScaleNetwork {
      *              clamp regardless.
      */
     public static void sendScaleRequest(double scale) {
-        ScaleClientState.setCurrentScale(scale); // optimistic update
-        ClientPlayNetworking.send(new ScaleRequestPayload(scale));
+        ScaleClientState.setCurrentScale(scale); // optimistic update, unchanged
+        pending = true;
+        pendingScale = scale;
+        ticksUntilFlush = DEBOUNCE_TICKS;
     }
 
     /**
@@ -98,6 +104,7 @@ public final class ClientScaleNetwork {
      */
     public static void sendResetRequest() {
         sendScaleRequest(RESET_SCALE);
+        flushPending(); // reset should feel instant, skip the debounce window
     }
 
     public static void sendAdminQuery(String targetName) {
@@ -106,5 +113,26 @@ public final class ClientScaleNetwork {
 
     public static void sendAdminSet(UUID target, double scale, boolean frozen) {
         ClientPlayNetworking.send(new AdminScaleSetPayload(target, scale, frozen));
+    }
+
+    public static void flushPending() {
+        if (!pending)
+            return;
+        pending = false;
+        ClientPlayNetworking.send(new ScaleRequestPayload(pendingScale));
+    }
+
+    /**
+     * Call on disconnect so a stale pending value doesn't fire into a dead
+     * connection.
+     */
+    public static void cancelPending() {
+        pending = false;
+    }
+
+    private static void tickDebounce() {
+        if (pending && --ticksUntilFlush <= 0) {
+            flushPending();
+        }
     }
 }
