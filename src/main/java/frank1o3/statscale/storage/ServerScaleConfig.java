@@ -19,11 +19,11 @@ public class ServerScaleConfig {
     public float maxScaleLimit = 16.0f;
     public double exponentMaxHealth = 1.0;
     public double exponentAttackDamage = 0.9;
-    public double exponentReach = 0.85;
+    public double exponentReach = 0.95;
     public double exponentStepHeight = 0.7;
-    public double exponentJumpStrength = 0.3;
+    public double exponentJumpStrength = 0.25;
     public double exponentMovementSpeed = 0.35;
-    public double exponentFallDistance = 0.01;
+    public double exponentFallDistance = 0.005;
 
     public static ServerScaleConfig load() {
         if (FILE.exists()) {
