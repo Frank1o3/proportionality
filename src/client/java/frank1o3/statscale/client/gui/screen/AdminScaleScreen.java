@@ -9,7 +9,14 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +40,10 @@ public class AdminScaleScreen extends BaseScaleScreen {
     private @Nullable ScaleButton freezeToggle;
     private boolean frozen;
     private @Nullable String resolvedName;
+    private static final int MAX_SUGGESTIONS = 5;
+    private static final int SUGGESTION_ROW_HEIGHT = 14;
+
+    private List<PlayerInfo> suggestions = List.of();
 
     public AdminScaleScreen(@Nullable net.minecraft.client.gui.screens.Screen parent) {
         super(Component.translatable("gui.proportionality.admin.title"), parent, PANEL_WIDTH, PANEL_HEIGHT);
@@ -53,12 +64,16 @@ public class AdminScaleScreen extends BaseScaleScreen {
         nameBox = new EditBox(font, cx - 90, py + 26, 140, 18,
                 Component.translatable("gui.proportionality.admin.player"));
         nameBox.setHint(Component.translatable("gui.proportionality.admin.player_hint"));
+        nameBox.setResponder(this::updateSuggestions);
         addRenderableWidget(nameBox);
 
         addRenderableWidget(ScaleButton.builder()
                 .bounds(cx + 54, py + 26, 60, 18)
                 .message(Component.translatable("gui.proportionality.admin.lookup"))
-                .onPress(btn -> ClientScaleNetwork.sendAdminQuery(nameBox.getValue()))
+                .onPress(btn -> {
+                    ClientScaleNetwork.sendAdminQuery(nameBox.getValue());
+                    suggestions = List.of();
+                })
                 .build());
     }
 
@@ -113,6 +128,20 @@ public class AdminScaleScreen extends BaseScaleScreen {
                 .build());
     }
 
+    private void updateSuggestions(String text) {
+        if (text.isBlank() || minecraft == null || minecraft.getConnection() == null) {
+            suggestions = List.of();
+            return;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        suggestions = minecraft.getConnection().getOnlinePlayers().stream() // adjust to your mapping's
+                .filter(plrInfo -> plrInfo.getProfile().name().toLowerCase(Locale.ROOT).startsWith(lower))
+                .filter(name -> !name.getProfile().name().equalsIgnoreCase(text))
+                .sorted()
+                .limit(MAX_SUGGESTIONS)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Invoked by {@link AdminScaleClientState} whenever a fresh query response
      * arrives. Rebuilds the full widget set from scratch — clearing first, then
@@ -133,11 +162,41 @@ public class AdminScaleScreen extends BaseScaleScreen {
     @Override
     protected void renderPanelContent(GuiGraphicsExtractor graphics, int panelX, int panelY, int mouseX, int mouseY,
             float delta) {
-        if (resolvedName == null)
-            return;
-        // Live preview only makes sense while the target is actually online;
-        // resolving that from here would need a level lookup by UUID, left as
-        // a follow-up once this is wired end-to-end.
+        if (!suggestions.isEmpty() && nameBox.isFocused()) {
+            int rowX = nameBox.getX();
+            int rowY = nameBox.getY() + nameBox.getHeight() + 1;
+            int rowWidth = nameBox.getWidth();
+
+            for (int i = 0; i < suggestions.size(); i++) {
+                int y = rowY + i * SUGGESTION_ROW_HEIGHT;
+                boolean hovered = mouseX >= rowX && mouseX <= rowX + rowWidth
+                        && mouseY >= y && mouseY <= y + SUGGESTION_ROW_HEIGHT;
+                graphics.fill(rowX, y, rowX + rowWidth, y + SUGGESTION_ROW_HEIGHT, hovered ? 0xCC_444466 : 0xCC_1A1A2E);
+                graphics.text(font, Component.literal(suggestions.get(i).getProfile().name()),
+                        rowX + 3, y + 3, 0xFF_FFFFFF, false);
+            }
+        }
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (!suggestions.isEmpty() && nameBox.isFocused()) {
+            double mouseX = event.x();
+            double mouseY = event.y();
+            int rowX = nameBox.getX();
+            int rowY = nameBox.getY() + nameBox.getHeight() + 1;
+            int rowWidth = nameBox.getWidth();
+
+            for (int i = 0; i < suggestions.size(); i++) {
+                int y = rowY + i * SUGGESTION_ROW_HEIGHT;
+                if (mouseX >= rowX && mouseX <= rowX + rowWidth && mouseY >= y && mouseY <= y + SUGGESTION_ROW_HEIGHT) {
+                    nameBox.setValue(suggestions.get(i).getProfile().name());
+                    suggestions = List.of();
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override

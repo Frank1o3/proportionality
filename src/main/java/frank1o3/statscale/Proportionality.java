@@ -13,6 +13,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -53,6 +54,9 @@ public class Proportionality implements ModInitializer {
 
     /** Default scale used when resetting a player. */
     private static final float DEFAULT_SCALE = 1.0f;
+
+    private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; // every 5 minutes
+    private static int autosaveTicker = 0;
 
     /**
      * Singleton storage instance, live for the duration of a server session.
@@ -126,12 +130,19 @@ public class Proportionality implements ModInitializer {
             LOGGER.info("[Proportionality] Scale storage loaded.");
         });
 
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (storage == null)
+                return;
+            if (++autosaveTicker >= AUTOSAVE_INTERVAL_TICKS) {
+                autosaveTicker = 0;
+                storage.saveIfDirty();
+            }
+        });
+
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             LOGGER.info("[Proportionality] SERVER_STOPPING fired.");
-
             if (storage != null) {
-                LOGGER.info("[Proportionality] Saving scale storage...");
-                storage.save();
+                storage.save(); // unconditional — don't rely on the dirty flag during shutdown
                 LOGGER.info("[Proportionality] Scale storage flushed to disk.");
             } else {
                 LOGGER.warn("[Proportionality] Cannot save scale storage: storage is null!");

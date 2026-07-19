@@ -42,6 +42,7 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     public static final double DEFAULT_SCALE = 1.0;
+    private volatile boolean dirty = false;
     private static final String FILE_NAME = "proportionality_scales.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -167,42 +168,31 @@ public final class ScaleStorage {
         return get(uuid).frozen();
     }
 
-    /**
-     * Persists a new scale for the given player via the normal (non-admin) path.
-     *
-     * <p>
-     * <b>This is the actual security boundary for freezing:</b> if the player is
-     * currently frozen, the request is silently dropped rather than applied.
-     * Callers (the packet handler, commands) should still bail out early on
-     * their own if they want to skip network round-trips, but this method is
-     * the last line of defence regardless of what any client sends.
-     *
-     * @return {@code true} if the scale was actually applied, {@code false} if
-     *         it was rejected because the player is frozen.
-     */
     public boolean setScale(UUID uuid, double scale) {
         if (isFrozen(uuid)) {
             return false;
         }
         data.put(uuid, new PlayerScaleData(scale, false));
-        save();
+        dirty = true;
         return true;
     }
 
-    /**
-     * Operator-only path: sets both the scale and the freeze flag directly,
-     * bypassing the freeze check above. Callers of this method are responsible
-     * for having already verified operator/moderator permission.
-     */
     public void adminSetScale(UUID uuid, double scale, boolean frozen) {
         data.put(uuid, new PlayerScaleData(scale, frozen));
-        save();
+        dirty = true;
     }
 
-    /** Operator-only: toggles freeze without changing the stored scale. */
     public void setFrozen(UUID uuid, boolean frozen) {
         PlayerScaleData current = get(uuid);
         data.put(uuid, new PlayerScaleData(current.scale(), frozen));
+        dirty = true;
+    }
+
+    /** Writes to disk only if something changed since the last save. */
+    public void saveIfDirty() {
+        if (!dirty)
+            return;
         save();
+        dirty = false;
     }
 }
