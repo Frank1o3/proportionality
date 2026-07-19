@@ -1,6 +1,5 @@
 package frank1o3.statscale;
 
-import frank1o3.statscale.core.HandleCallbacks;
 import frank1o3.statscale.network.ScalePacketHandler;
 import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
@@ -18,16 +17,12 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.mojang.brigadier.arguments.FloatArgumentType;
 
 /**
  * Server-side mod entry point for Proportionality.
@@ -51,9 +46,6 @@ public class Proportionality implements ModInitializer {
 
     public static final String MOD_ID = "proportionality";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-
-    /** Default scale used when resetting a player. */
-    private static final float DEFAULT_SCALE = 1.0f;
 
     private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; // every 5 minutes
     private static int autosaveTicker = 0;
@@ -184,48 +176,6 @@ public class Proportionality implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess,
                 environment) -> dispatcher.register(Commands.literal("scale")
 
-                        // ── /scale set ─────────────────────────────────────────────
-                        .then(Commands.literal("set")
-
-                                // /scale set <value> (self, any player)
-                                .then(Commands.argument("value", FloatArgumentType.floatArg(0.1f, 32.0f))
-                                        .requires(source -> source.permissions()
-                                                .hasPermission(Permissions.CHAT_SEND_COMMANDS))
-                                        .executes(context -> HandleCallbacks.MeSet(context, config)))
-
-                                // /scale set <player> <value> (operator)
-                                .then(Commands.argument("player", EntityArgument.player())
-                                        .requires(source -> source.permissions()
-                                                .hasPermission(Permissions.COMMANDS_MODERATOR))
-                                        .then(Commands.argument("value", FloatArgumentType.floatArg(0.1f, 32.0f))
-                                                .executes(context -> {
-                                                    ServerPlayer target = EntityArgument.getPlayer(context, "player");
-                                                    float value = FloatArgumentType.getFloat(context, "value");
-                                                    return applyScaleToPlayer(context.getSource().getServer() != null
-                                                            ? context.getSource()
-                                                            : context.getSource(),
-                                                            target, value, context);
-                                                }))))
-
-                        // ── /scale reset ───────────────────────────────────────────
-                        .then(Commands.literal("reset")
-
-                                // /scale reset (self, any player)
-                                .requires(source -> source.permissions().hasPermission(Permissions.CHAT_SEND_COMMANDS))
-                                .executes(context -> {
-                                    ServerPlayer player = context.getSource().getPlayerOrException();
-                                    return resetPlayerScale(player, context.getSource());
-                                })
-
-                                // /scale reset <player> (operator)
-                                .then(Commands.argument("player", EntityArgument.player())
-                                        .requires(source -> source.permissions()
-                                                .hasPermission(Permissions.COMMANDS_MODERATOR))
-                                        .executes(context -> {
-                                            ServerPlayer target = EntityArgument.getPlayer(context, "player");
-                                            return resetPlayerScale(target, context.getSource());
-                                        })))
-
                         // ── /scale reload ──────────────────────────────────────────
                         .then(Commands.literal("reload")
                                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
@@ -240,60 +190,6 @@ public class Proportionality implements ModInitializer {
                                     }
                                     return 1;
                                 }))));
-    }
-
-    // -------------------------------------------------------------------------
-    // Command helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Applies {@code scale} to {@code target}, persists it, syncs to client,
-     * and sends feedback to the command source.
-     */
-    private static int applyScaleToPlayer(
-            net.minecraft.commands.CommandSourceStack source,
-            ServerPlayer target,
-            float scale,
-            com.mojang.brigadier.context.CommandContext<net.minecraft.commands.CommandSourceStack> context) {
-
-        double attributeMax = ScalePacketHandler.SERVER_MAX_SCALE;
-        double clamped = Math.min(scale, attributeMax);
-
-        HandleCallbacks.applyScaleProfile(target, clamped, attributeMax, config);
-        storage.adminSetScale(target.getUUID(), clamped, storage.isFrozen(target.getUUID())); // preserve existing
-                                                                                              // freeze state
-        ServerPlayNetworking.send(target, new ScaleSyncPayload(clamped, attributeMax));
-
-        source.sendSuccess(() -> Component.literal(
-                "[Proportionality] Set " + target.getName().getString() + "'s scale to " + clamped + "."), true);
-        return 1;
-    }
-
-    /**
-     * Resets {@code target}'s scale to {@link #DEFAULT_SCALE}, persists it,
-     * syncs to the client, and sends feedback to the command source.
-     */
-    private static int resetPlayerScale(
-            ServerPlayer target,
-            net.minecraft.commands.CommandSourceStack source) {
-
-        double attributeMax = ScalePacketHandler.SERVER_MAX_SCALE;
-
-        HandleCallbacks.applyScaleProfile(target, DEFAULT_SCALE, attributeMax, config);
-        storage.setScale(target.getUUID(), DEFAULT_SCALE);
-        ServerPlayNetworking.send(target, new ScaleSyncPayload(DEFAULT_SCALE, attributeMax));
-
-        boolean isSelf = source.isPlayer() && source.getPlayer() != null
-                && source.getPlayer().getUUID().equals(target.getUUID());
-
-        if (isSelf) {
-            source.sendSuccess(() -> Component.literal("[Proportionality] Your scale has been reset to 1.0."), false);
-        } else {
-            source.sendSuccess(() -> Component.literal(
-                    "[Proportionality] Reset " + target.getName().getString() + "'s scale to 1.0."), true);
-            target.sendSystemMessage(Component.literal("[Proportionality] Your scale has been reset to 1.0."));
-        }
-        return 1;
     }
 
     // -------------------------------------------------------------------------
