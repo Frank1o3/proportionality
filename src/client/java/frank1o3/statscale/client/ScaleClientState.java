@@ -36,6 +36,9 @@ public final class ScaleClientState {
      */
     public static final double DEFAULT_MAX_SCALE = 16.0f;
 
+    public static double minScale;
+    public static double maxScale;
+
     private static double currentScale = DEFAULT_SCALE;
     private static double serverMaxScale = DEFAULT_MAX_SCALE;
 

@@ -4,6 +4,7 @@ import frank1o3.statscale.network.ScalePacketHandler;
 import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
 import frank1o3.statscale.network.packets.AdminScaleSetPayload;
+import frank1o3.statscale.network.packets.RangeSyncPayload;
 import frank1o3.statscale.network.packets.ScaleRequestPayload;
 import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import frank1o3.statscale.storage.ScaleStorage;
@@ -17,9 +18,13 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +54,8 @@ public class Proportionality implements ModInitializer {
 
     private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; // every 5 minutes
     private static int autosaveTicker = 0;
+    private static double minScale;
+    private static double maxScale;
 
     /**
      * Singleton storage instance, live for the duration of a server session.
@@ -74,6 +81,12 @@ public class Proportionality implements ModInitializer {
         registerLifecycleEvents();
         registerLoginSync();
         registerCommands();
+
+        Holder<Attribute> attribute = Attributes.SCALE;
+        if (attribute.value() instanceof RangedAttribute ranged) {
+            minScale = ranged.getMinValue();
+            maxScale = ranged.getMaxValue();
+        }
     }
 
     public static ServerScaleConfig getConfig() {
@@ -89,9 +102,10 @@ public class Proportionality implements ModInitializer {
      * This must happen before any packet is sent or received on either side.
      */
     private static void registerPackets() {
-        // Existing C2S/S2C
+        // Main C2S/S2C
         PayloadTypeRegistry.serverboundPlay().register(ScaleRequestPayload.TYPE, ScaleRequestPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(ScaleSyncPayload.TYPE, ScaleSyncPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RangeSyncPayload.TYPE, RangeSyncPayload.CODEC);
 
         // Admin C2S/S2C
         PayloadTypeRegistry.serverboundPlay().register(AdminScaleQueryPayload.TYPE, AdminScaleQueryPayload.CODEC);
@@ -101,17 +115,18 @@ public class Proportionality implements ModInitializer {
         ServerPlayNetworking.registerGlobalReceiver(
                 ScaleRequestPayload.TYPE,
                 (payload, context) -> ScalePacketHandler.handleScaleRequest(payload, context.player(), storage,
-                        config));
+                        config, minScale, maxScale));
 
         ServerPlayNetworking.registerGlobalReceiver(
                 AdminScaleQueryPayload.TYPE,
                 (payload, context) -> ScalePacketHandler.handleAdminQuery(
-                        payload, context.player(), storage, context.player().level().getServer()));
+                        payload, context.player(), storage, context.player().level().getServer(), maxScale));
 
         ServerPlayNetworking.registerGlobalReceiver(
                 AdminScaleSetPayload.TYPE,
                 (payload, context) -> ScalePacketHandler.handleAdminSet(
-                        payload, context.player(), storage, config, context.player().level().getServer()));
+                        payload, context.player(), storage, config, context.player().level().getServer(), minScale,
+                        maxScale));
     }
 
     /** Loads storage when the world is ready and flushes it on shutdown. */
@@ -120,6 +135,10 @@ public class Proportionality implements ModInitializer {
             storage = new ScaleStorage(server);
             storage.load();
             LOGGER.info("[Proportionality] Scale storage loaded.");
+        });
+
+        ServerPlayConnectionEvents.JOIN.register((listener, sender, player) -> {
+            sender.sendPacket(new RangeSyncPayload(minScale));
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -153,11 +172,11 @@ public class Proportionality implements ModInitializer {
                         handler.player.getName().getString());
                 return;
             }
-            ScalePacketHandler.syncPlayerScale(handler.player, storage, config);
+            ScalePacketHandler.syncPlayerScale(handler.player, storage, config, maxScale);
         });
 
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config);
+            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config, maxScale);
         });
     }
 
@@ -186,7 +205,8 @@ public class Proportionality implements ModInitializer {
 
                                     if (context.getSource().getServer() != null) {
                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                                .forEach(p -> ScalePacketHandler.syncPlayerScale(p, storage, config));
+                                                .forEach(p -> ScalePacketHandler.syncPlayerScale(p, storage, config,
+                                                        maxScale));
                                     }
                                     return 1;
                                 }))));
@@ -214,5 +234,13 @@ public class Proportionality implements ModInitializer {
      */
     public static ScaleStorage getStorage() {
         return storage;
+    }
+
+    public static double getMinScale() {
+        return minScale;
+    }
+
+    public static double getMaxcale() {
+        return maxScale;
     }
 }

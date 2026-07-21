@@ -97,9 +97,9 @@ public class ScaleScreen extends Screen {
     /**
      * Minimum scale the slider can represent. Matches the command argument floor.
      */
-    private static final float SCALE_MIN = 0.1f;
+    private double SCALE_MIN = 0.1f;
     /** Step size: 0.1 increments, matching the Scale.java exponent resolution. */
-    private static final float SCALE_STEP = 0.1f;
+    private double SCALE_STEP = 0.1f;
 
     // -------------------------------------------------------------------------
     // State
@@ -124,9 +124,10 @@ public class ScaleScreen extends Screen {
      * @param parent The screen to return to on close, or {@code null} to return
      *               to the game.
      */
-    public ScaleScreen(@Nullable Screen parent) {
+    public ScaleScreen(@Nullable Screen parent, double minScale) {
         super(Component.translatable("gui.proportionality.scale.title"));
         this.parent = parent;
+        this.SCALE_MIN = minScale;
     }
 
     // -------------------------------------------------------------------------
@@ -189,7 +190,7 @@ public class ScaleScreen extends Screen {
             addRenderableWidget(ScaleButton.builder()
                     .bounds(cx - 40, buttonsY + BUTTON_HEIGHT + 6, 80, 18)
                     .message(Component.translatable("gui.proportionality.admin.open"))
-                    .onPress(btn -> minecraft.gui.setScreen(new AdminScaleScreen(this)))
+                    .onPress(btn -> minecraft.gui.setScreen(new AdminScaleScreen(this, SCALE_MIN)))
                     .build());
         }
     }

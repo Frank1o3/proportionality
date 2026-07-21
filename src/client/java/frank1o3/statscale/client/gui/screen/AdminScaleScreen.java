@@ -34,6 +34,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
 
     private static final int PANEL_WIDTH = 240;
     private static final int PANEL_HEIGHT = 140;
+    private double SCALE_MIN = 0.1f;
 
     private EditBox nameBox;
     private @Nullable ScaleSlider slider;
@@ -45,8 +46,9 @@ public class AdminScaleScreen extends BaseScaleScreen {
 
     private List<PlayerInfo> suggestions = List.of();
 
-    public AdminScaleScreen(@Nullable net.minecraft.client.gui.screens.Screen parent) {
+    public AdminScaleScreen(@Nullable net.minecraft.client.gui.screens.Screen parent, double minScale) {
         super(Component.translatable("gui.proportionality.admin.title"), parent, PANEL_WIDTH, PANEL_HEIGHT);
+        this.SCALE_MIN = minScale;
     }
 
     @Override
@@ -99,7 +101,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
 
         slider = ScaleSlider.builder()
                 .bounds(cx - 90, py + 56, 180, 20)
-                .range(0.1, result.maxScale())
+                .range(SCALE_MIN, result.maxScale())
                 .step(0.1)
                 .initialValue(result.scale())
                 .label(Component.literal(result.name()))

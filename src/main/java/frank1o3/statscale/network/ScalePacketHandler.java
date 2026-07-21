@@ -4,6 +4,7 @@ import frank1o3.statscale.core.HandleCallbacks;
 import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
 import frank1o3.statscale.network.packets.AdminScaleSetPayload;
+import frank1o3.statscale.network.packets.RangeSyncPayload;
 import frank1o3.statscale.network.packets.ScaleRequestPayload;
 import frank1o3.statscale.network.packets.ScaleSyncPayload;
 
@@ -49,13 +50,11 @@ public final class ScalePacketHandler {
      * In the future this could be loaded from a server config file; for now it
      * mirrors the hard cap enforced in {@link HandleCallbacks}.
      */
-    public static final float SERVER_MAX_SCALE = 16.0f;
 
     /**
      * Minimum value the server will ever apply (matches the command argument
      * minimum).
      */
-    private static final float SERVER_MIN_SCALE = 0.1f;
 
     private ScalePacketHandler() {
         throw new UnsupportedOperationException("Utility class");
@@ -90,10 +89,12 @@ public final class ScalePacketHandler {
             ScaleRequestPayload payload,
             ServerPlayer player,
             ScaleStorage storage,
-            ServerScaleConfig config) {
+            ServerScaleConfig config,
+            double minScale,
+            double maxScale) {
 
-        double attributeMax = resolveAttributeMax(player);
-        double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
+        double attributeMax = resolveAttributeMax(player, maxScale);
+        double effectiveMax = Math.min(maxScale, attributeMax);
 
         // 0. Frozen players cannot change their own scale, full stop — regardless
         // of what value the client sends or how the request was triggered.
@@ -106,7 +107,7 @@ public final class ScalePacketHandler {
         }
 
         double requested = payload.scale();
-        double clamped = Mth.clamp(requested, SERVER_MIN_SCALE, effectiveMax);
+        double clamped = Mth.clamp(requested, minScale, effectiveMax);
 
         HandleCallbacks.applyScaleProfile(player, clamped, effectiveMax, config);
         storage.setScale(player.getUUID(), clamped); // guaranteed to succeed; already checked frozen above
@@ -130,10 +131,11 @@ public final class ScalePacketHandler {
      * @param storage The active {@link ScaleStorage} instance.
      * @param config  The active {@link ServerScaleConfig} instance.
      */
-    public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config) {
+    public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config,
+            double maxScale) {
         ScaleStorage.PlayerScaleData saved = storage.get(player.getUUID());
-        double attributeMax = resolveAttributeMax(player);
-        double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
+        double attributeMax = resolveAttributeMax(player, maxScale);
+        double effectiveMax = Math.min(maxScale, attributeMax);
 
         // Re-apply on login so attributes are correct even after a server restart.
         HandleCallbacks.applyScaleProfile(player, saved.scale(), effectiveMax, config);
@@ -145,16 +147,24 @@ public final class ScalePacketHandler {
                 saved, effectiveMax, player.getName().getString());
     }
 
+    public static void syncRange(ServerPlayer player, double minScale, double maxScale) {
+        ServerPlayNetworking.send(player, new RangeSyncPayload(minScale));
+
+        Proportionality.LOGGER.debug(
+                "[Proportionality] Synced scale range (min={}) (max={}) to {}",
+                minScale, maxScale, player.getName().getString());
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
 
     /**
      * Reads the hard maximum of the {@code minecraft:scale} attribute for this
-     * player. Falls back to {@link #SERVER_MAX_SCALE} if the attribute is absent
+     * player. Falls back to maxScale if the attribute is absent
      * or unbounded.
      */
-    private static double resolveAttributeMax(ServerPlayer player) {
+    private static double resolveAttributeMax(ServerPlayer player, double maxScale) {
         AttributeInstance instance = player.getAttribute(Attributes.SCALE);
         if (instance != null && instance.getAttribute().value() instanceof RangedAttribute ranged) {
             double cap = ranged.getMaxValue();
@@ -162,7 +172,7 @@ public final class ScalePacketHandler {
                 return cap;
             }
         }
-        return SERVER_MAX_SCALE;
+        return maxScale;
     }
 
     // -------------------------------------------------------------------------
@@ -182,7 +192,8 @@ public final class ScalePacketHandler {
             AdminScaleQueryPayload payload,
             ServerPlayer sender,
             ScaleStorage storage,
-            MinecraftServer server) {
+            MinecraftServer server,
+            double maxScale) {
 
         if (!hasAdminPermission(sender)) {
             Proportionality.LOGGER.warn(
@@ -199,7 +210,7 @@ public final class ScalePacketHandler {
         }
 
         ScaleStorage.PlayerScaleData data = storage.get(target.getUUID());
-        double effectiveMax = Math.min(SERVER_MAX_SCALE, resolveAttributeMax(target));
+        double effectiveMax = Math.min(maxScale, resolveAttributeMax(target, maxScale));
 
         ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
                 true, target.getUUID(), target.getName().getString(), data.scale(), effectiveMax, data.frozen()));
@@ -215,7 +226,7 @@ public final class ScalePacketHandler {
             ServerPlayer sender,
             ScaleStorage storage,
             ServerScaleConfig config,
-            MinecraftServer server) {
+            MinecraftServer server, double minScale, double maxScale) {
 
         if (!hasAdminPermission(sender)) {
             Proportionality.LOGGER.warn(
@@ -225,9 +236,9 @@ public final class ScalePacketHandler {
         }
 
         ServerPlayer target = server.getPlayerList().getPlayer(payload.target());
-        double attributeMax = target != null ? resolveAttributeMax(target) : SERVER_MAX_SCALE;
-        double effectiveMax = Math.min(SERVER_MAX_SCALE, attributeMax);
-        double clamped = Mth.clamp(payload.scale(), SERVER_MIN_SCALE, effectiveMax);
+        double attributeMax = target != null ? resolveAttributeMax(target, maxScale) : maxScale;
+        double effectiveMax = Math.min(maxScale, attributeMax);
+        double clamped = Mth.clamp(payload.scale(), minScale, effectiveMax);
 
         storage.adminSetScale(payload.target(), clamped, payload.frozen());
 

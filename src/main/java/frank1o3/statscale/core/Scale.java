@@ -32,10 +32,6 @@ public final class Scale {
             AttributeType type,
             ServerScaleConfig config) {
 
-        if (scale <= 1.0) {
-            return 1.0;
-        }
-
         double exponent = switch (type) {
             case MAX_HEALTH -> config.exponentMaxHealth;
             case ATTACK_DAMAGE -> config.exponentAttackDamage;
@@ -46,7 +42,8 @@ public final class Scale {
             case FALL_DISTANCE -> config.exponentFallDistance;
         };
 
-        return Math.pow(scale, exponent);
+        double pow = Math.pow(scale, exponent);
+        return Math.max(pow, 0.000_000_1f);
     }
 
     public enum AttributeType {

@@ -16,14 +16,15 @@ public class ServerScaleConfig {
     private static final File FILE = new File(FabricLoader.getInstance().getConfigDir().toFile(), "statscale.json");
 
     // Default configuration values
-    public float maxScaleLimit = 16.0f;
-    public double exponentMaxHealth = 1.0;
+    public double maxScaleLimit = 16.0f;
+    public double exponentMaxHealth = 1;
     public double exponentAttackDamage = 0.9;
-    public double exponentReach = 0.95;
-    public double exponentStepHeight = 0.7;
-    public double exponentJumpStrength = 0.25;
-    public double exponentMovementSpeed = 0.35;
-    public double exponentFallDistance = 0.005;
+    public double exponentReach = 0.8;
+    public double exponentStepHeight = 0.85;
+    public double exponentJumpStrength = 0.4;
+    public double exponentMovementSpeed = 0.4;
+    public double exponentFallDistance = 0.5;
+    public double exponentKnockBackResistance = 0.25;
 
     public static ServerScaleConfig load() {
         if (FILE.exists()) {

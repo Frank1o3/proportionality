@@ -2,16 +2,13 @@ package frank1o3.statscale.client.network;
 
 import java.util.UUID;
 
-import frank1o3.statscale.client.AdminScaleClientState;
 import frank1o3.statscale.client.ScaleClientState;
-import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
 import frank1o3.statscale.network.packets.AdminScaleSetPayload;
 import frank1o3.statscale.network.packets.ScaleRequestPayload;
 import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 /**
@@ -45,27 +42,6 @@ public final class ClientScaleNetwork {
 
     private ClientScaleNetwork() {
         throw new UnsupportedOperationException("Utility class");
-    }
-
-    // -------------------------------------------------------------------------
-    // Registration
-    // -------------------------------------------------------------------------
-
-    /**
-     * Registers the S2C packet receiver.
-     * Must be called during client initialisation.
-     */
-    public static void register() {
-        ClientPlayNetworking.registerGlobalReceiver(
-                ScaleSyncPayload.TYPE,
-                (payload, context) -> context.client().execute(
-                        () -> ScaleClientState.applySync(payload.currentScale(), payload.serverMaxScale())));
-        ClientPlayNetworking.registerGlobalReceiver(AdminScaleInfoPayload.TYPE,
-                (payload, context) -> context.client().execute(() -> AdminScaleClientState.applyInfo(
-                        payload.found(), payload.target(), payload.name(), payload.scale(), payload.serverMaxScale(),
-                        payload.frozen())));
-
-        ClientTickEvents.END_CLIENT_TICK.register(client -> tickDebounce());
     }
 
     // -------------------------------------------------------------------------
@@ -130,7 +106,7 @@ public final class ClientScaleNetwork {
         pending = false;
     }
 
-    private static void tickDebounce() {
+    public static void tickDebounce() {
         if (pending && --ticksUntilFlush <= 0) {
             flushPending();
         }
