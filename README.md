@@ -45,31 +45,7 @@ The slider's minimum and maximum values are provided by the connected server. Th
 
 Regular players do not need command access to use the scale screen.
 
-## Commands
-
-Commands are primarily useful for server administration and for players who prefer a command-based workflow.
-
-### `/scale set <value>`
-
-Sets the executing player's scale to the specified value.
-
-For example:
-
-```text
-/scale set 2
-```
-
-sets the player's target scale to `2`, making them approximately twice their normal size.
-
-To return to the default player size, set the scale to `1`:
-
-```text
-/scale set 1
-```
-
-The maximum allowed scale is determined by the server configuration and the limits of Minecraft's scale attribute.
-
-The command requires permission to send commands.
+## Command
 
 ### `/scale reload`
 
