@@ -93,8 +93,7 @@ public final class ScalePacketHandler {
             double minScale,
             double maxScale) {
 
-        double attributeMax = resolveAttributeMax(player, maxScale);
-        double effectiveMax = Math.min(maxScale, attributeMax);
+        double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
 
         // 0. Frozen players cannot change their own scale, full stop — regardless
         // of what value the client sends or how the request was triggered.
@@ -132,27 +131,31 @@ public final class ScalePacketHandler {
      * @param config  The active {@link ServerScaleConfig} instance.
      */
     public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config,
-            double maxScale) {
+            double minScale, double maxScale) {
         ScaleStorage.PlayerScaleData saved = storage.get(player.getUUID());
-        double attributeMax = resolveAttributeMax(player, maxScale);
-        double effectiveMax = Math.min(maxScale, attributeMax);
+        double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
+        double clampedScale = Mth.clamp(saved.scale(), minScale, effectiveMax);
 
         // Re-apply on login so attributes are correct even after a server restart.
-        HandleCallbacks.applyScaleProfile(player, saved.scale(), effectiveMax, config);
+        HandleCallbacks.applyScaleProfile(player, clampedScale, effectiveMax, config);
+        if (clampedScale != saved.scale()) {
+            storage.adminSetScale(player.getUUID(), clampedScale, saved.frozen());
+        }
 
-        ServerPlayNetworking.send(player, new ScaleSyncPayload(saved.scale(), effectiveMax));
+        ServerPlayNetworking.send(player, new ScaleSyncPayload(clampedScale, effectiveMax));
 
         Proportionality.LOGGER.debug(
                 "[Proportionality] Synced scale {} (max={}) to {}",
-                saved, effectiveMax, player.getName().getString());
+                clampedScale, effectiveMax, player.getName().getString());
     }
 
-    public static void syncRange(ServerPlayer player, double minScale, double maxScale) {
-        ServerPlayNetworking.send(player, new RangeSyncPayload(minScale));
+    public static void syncRange(ServerPlayer player, ServerScaleConfig config, double minScale, double maxScale) {
+        double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
+        ServerPlayNetworking.send(player, new RangeSyncPayload(minScale, effectiveMax));
 
         Proportionality.LOGGER.debug(
                 "[Proportionality] Synced scale range (min={}) (max={}) to {}",
-                minScale, maxScale, player.getName().getString());
+                minScale, effectiveMax, player.getName().getString());
     }
 
     // -------------------------------------------------------------------------
@@ -173,6 +176,24 @@ public final class ScalePacketHandler {
             }
         }
         return maxScale;
+    }
+
+    /**
+     * Applies the server owner's JSON cap without ever exceeding the actual
+     * {@code minecraft:scale} attribute range.
+     */
+    private static double resolveEffectiveMax(ServerPlayer player, double minScale, double attributeMax,
+            ServerScaleConfig config) {
+        double configuredMax = resolveConfiguredMax(minScale, attributeMax, config);
+        return Math.max(minScale, Math.min(configuredMax, resolveAttributeMax(player, attributeMax)));
+    }
+
+    private static double resolveConfiguredMax(double minScale, double attributeMax, ServerScaleConfig config) {
+        double configuredMax = config.maxScaleLimit;
+        if (!Double.isFinite(configuredMax)) {
+            configuredMax = attributeMax;
+        }
+        return Math.max(minScale, Math.min(configuredMax, attributeMax));
     }
 
     // -------------------------------------------------------------------------
@@ -210,7 +231,7 @@ public final class ScalePacketHandler {
         }
 
         ScaleStorage.PlayerScaleData data = storage.get(target.getUUID());
-        double effectiveMax = Math.min(maxScale, resolveAttributeMax(target, maxScale));
+        double effectiveMax = resolveEffectiveMax(target, Proportionality.getMinScale(), maxScale, Proportionality.getConfig());
 
         ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
                 true, target.getUUID(), target.getName().getString(), data.scale(), effectiveMax, data.frozen()));
@@ -236,8 +257,9 @@ public final class ScalePacketHandler {
         }
 
         ServerPlayer target = server.getPlayerList().getPlayer(payload.target());
-        double attributeMax = target != null ? resolveAttributeMax(target, maxScale) : maxScale;
-        double effectiveMax = Math.min(maxScale, attributeMax);
+        double effectiveMax = target != null
+                ? resolveEffectiveMax(target, minScale, maxScale, config)
+                : resolveConfiguredMax(minScale, maxScale, config);
         double clamped = Mth.clamp(payload.scale(), minScale, effectiveMax);
 
         storage.adminSetScale(payload.target(), clamped, payload.frozen());

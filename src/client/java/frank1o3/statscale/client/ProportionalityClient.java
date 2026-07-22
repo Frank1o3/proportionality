@@ -29,7 +29,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
  */
 @Environment(EnvType.CLIENT)
 public class ProportionalityClient implements ClientModInitializer {
-    private static double minScale;
 
     @Override
     public void onInitializeClient() {
@@ -37,7 +36,7 @@ public class ProportionalityClient implements ClientModInitializer {
         register();
 
         // 2. Register the keybind and its tick handler.
-        ScaleKeybind.register(minScale);
+        ScaleKeybind.register();
 
         // 3. Reset client state on disconnect so slider defaults are sane next session.
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ScaleClientState.reset());
@@ -58,7 +57,7 @@ public class ProportionalityClient implements ClientModInitializer {
                         payload.frozen())));
         ClientPlayNetworking.registerGlobalReceiver(RangeSyncPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
-                    minScale = payload.minScale();
+                    ScaleClientState.applyRange(payload.minScale(), payload.maxScale());
                 }));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> ClientScaleNetwork.tickDebounce());

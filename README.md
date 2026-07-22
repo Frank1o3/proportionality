@@ -1,15 +1,16 @@
 # Proportionality
 
-Proportionality is a primarily server-side Fabric mod that allows players to change their physical size while proportionally adjusting their attributes to match.
-
-The mod also includes client-side functionality, including a scale adjustment screen and a keybind, allowing players to change their size without having to use server commands.
+Proportionality is a Fabric mod that lets players change their physical size while proportionally adjusting their attributes to match. Players adjust their size through an in-game scale screen, while the server remains authoritative over the allowed range and applied attributes.
 
 Proportionality is designed for both single-player and multiplayer environments, with scale values managed server-side and synchronized with connected clients.
 
 ## Features
 
-* Change player size through an in-game GUI.
-* Change player size using server commands.
+* Adjust player size through an in-game scale screen.
+* Open the scale screen with a rebindable keybind.
+* Receive the server's allowed minimum and maximum scale in the UI.
+* Limit the server's maximum player scale through configuration.
+* Change player size using server commands when appropriate.
 * Proportionally adjust player attributes based on their size.
 * Configurable scaling behavior for individual attributes.
 * Server-side persistence of player scale values.
@@ -30,9 +31,9 @@ The mod currently scales the following attributes:
 * Fall damage multiplier
 * Player scale
 
-## Scale Adjustment Screen
+## Player Interface
 
-Players can change their size through the Proportionality scale adjustment screen.
+The scale adjustment screen is the primary way for players to change their size. Open it in-game, choose a value with the slider, and confirm the selection. The server validates every change and sends the committed value back to the client.
 
 By default, the screen can be opened by pressing:
 
@@ -40,11 +41,13 @@ By default, the screen can be opened by pressing:
 
 The keybind can be changed through Minecraft's standard **Controls** menu.
 
-The GUI is intended to provide a convenient way for regular players to adjust their size without needing access to server commands.
+The slider's minimum and maximum values are provided by the connected server. This means server owners can set a maximum such as `2` or `16`, and players cannot select a larger size through the UI.
+
+Regular players do not need command access to use the scale screen.
 
 ## Commands
 
-Proportionality provides commands for changing player scale and managing the server's scaling configuration.
+Commands are primarily useful for server administration and for players who prefer a command-based workflow.
 
 ### `/scale set <value>`
 
@@ -78,9 +81,6 @@ After reloading the configuration, the updated scaling rules are reapplied to pl
 
 This command requires moderator-level command permissions and is intended for server administrators.
 
-> **Note:** Regular players can use the in-game scale adjustment screen instead of the `/scale set` command. The default keybind for opening the scale screen is **K**.
-
-
 ## Configuration
 
 Proportionality uses a server-side configuration to control how attributes respond to changes in player scale.
@@ -88,6 +88,8 @@ Proportionality uses a server-side configuration to control how attributes respo
 The configuration allows the scaling behavior of individual attributes to be adjusted using configurable scaling parameters and exponents.
 
 This makes it possible to fine-tune how attributes such as health, movement speed, jump strength, attack damage, and reach behave as a player's size changes.
+
+`maxScaleLimit` controls the maximum size players may select. The effective maximum is the lower of `maxScaleLimit` and Minecraft's actual `minecraft:scale` attribute maximum. For example, setting `maxScaleLimit` to `2` limits players to double size; setting it to `16` permits up to 16x size when the attribute supports it.
 
 The configuration can be reloaded using:
 
@@ -118,10 +120,10 @@ The server is responsible for:
 * Calculating player scale values.
 * Applying scaled attributes.
 * Persisting player scale data.
-* Synchronizing scale values with clients.
+* Synchronizing the allowed scale range and committed scale values with clients.
 * Managing server-side scaling configuration.
 
-The client-side component provides functionality that improves the player experience, primarily the scale adjustment screen and its associated keybind.
+The client-side component provides the primary player interface: the scale adjustment screen and its associated keybind. It displays the range received from the server rather than applying its own hardcoded limits.
 
 This design allows server administrators to control scaling behavior while still providing players with an easy-to-use interface for changing their own scale.
 

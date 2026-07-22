@@ -54,16 +54,16 @@ public final class ScaleKeybind {
      * <p>
      * Must be called during client initialisation, before the first client tick.
      */
-    public static void register(double minScale) {
+    public static void register() {
         openScreenKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(BINDING_KEY, GLFW.GLFW_KEY_K, CATEGORY));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             // consumeClick() returns true once per physical key press, preventing
             // the screen from opening multiple times if the key is held down.
             while (openScreenKey.consumeClick()) {
-                if (client.gui.screen() == null) {
+                if (client.gui.screen() == null && ScaleClientState.hasRange()) {
                     // Only open if no other screen is currently shown.
-                    client.gui.setScreen(new ScaleScreen(null, minScale));
+                    client.gui.setScreen(new ScaleScreen(null));
                 }
             }
         });

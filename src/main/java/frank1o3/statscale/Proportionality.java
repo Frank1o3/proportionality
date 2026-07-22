@@ -137,8 +137,8 @@ public class Proportionality implements ModInitializer {
             LOGGER.info("[Proportionality] Scale storage loaded.");
         });
 
-        ServerPlayConnectionEvents.JOIN.register((listener, sender, player) -> {
-            sender.sendPacket(new RangeSyncPayload(minScale));
+        ServerPlayConnectionEvents.JOIN.register((listener, sender, server) -> {
+            ScalePacketHandler.syncRange(listener.player, config, minScale, maxScale);
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -172,11 +172,12 @@ public class Proportionality implements ModInitializer {
                         handler.player.getName().getString());
                 return;
             }
-            ScalePacketHandler.syncPlayerScale(handler.player, storage, config, maxScale);
+            ScalePacketHandler.syncPlayerScale(handler.player, storage, config, minScale, maxScale);
         });
 
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config, maxScale);
+            ScalePacketHandler.syncRange(newPlayer, config, minScale, maxScale);
+            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config, minScale, maxScale);
         });
     }
 
@@ -205,8 +206,11 @@ public class Proportionality implements ModInitializer {
 
                                     if (context.getSource().getServer() != null) {
                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                                .forEach(p -> ScalePacketHandler.syncPlayerScale(p, storage, config,
-                                                        maxScale));
+                                                .forEach(p -> {
+                                                    ScalePacketHandler.syncRange(p, config, minScale, maxScale);
+                                                    ScalePacketHandler.syncPlayerScale(p, storage, config, minScale,
+                                                            maxScale);
+                                                });
                                     }
                                     return 1;
                                 }))));

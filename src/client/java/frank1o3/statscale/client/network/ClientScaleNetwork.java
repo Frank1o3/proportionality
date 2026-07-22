@@ -59,7 +59,7 @@ public final class ClientScaleNetwork {
      * {@link ScaleSyncPayload} will correct the cached value.
      *
      * @param scale The desired scale. Should be within the range shown by the
-     *              slider ({@code [0.1, serverMaxScale]}), but the server will
+     *              slider, but the server will
      *              clamp regardless.
      */
     public static void sendScaleRequest(double scale) {

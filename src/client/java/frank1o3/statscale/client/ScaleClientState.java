@@ -30,17 +30,10 @@ public final class ScaleClientState {
 
     /** Default scale used before the server has sent its first sync. */
     public static final double DEFAULT_SCALE = 1.0f;
-    /**
-     * Default server max used before the server has sent its first sync
-     * (singleplayer / offline).
-     */
-    public static final double DEFAULT_MAX_SCALE = 16.0f;
-
-    public static double minScale;
-    public static double maxScale;
-
     private static double currentScale = DEFAULT_SCALE;
-    private static double serverMaxScale = DEFAULT_MAX_SCALE;
+    private static double minScale;
+    private static double maxScale;
+    private static boolean hasRange;
 
     private ScaleClientState() {
         throw new UnsupportedOperationException("Utility class");
@@ -62,10 +55,19 @@ public final class ScaleClientState {
      * Returns the maximum scale the current server allows.
      * Used to cap the slider range in
      * {@link frank1o3.statscale.client.gui.screen.ScaleScreen}.
-     * Defaults to {@link #DEFAULT_MAX_SCALE} until the server sends a sync packet.
      */
-    public static double getServerMaxScale() {
-        return serverMaxScale;
+    public static double getMinScale() {
+        return minScale;
+    }
+
+    /** Returns the server-authoritative maximum scale. */
+    public static double getMaxScale() {
+        return maxScale;
+    }
+
+    /** Whether the server has sent the scale range for this connection. */
+    public static boolean hasRange() {
+        return hasRange;
     }
 
     // -------------------------------------------------------------------------
@@ -78,11 +80,20 @@ public final class ScaleClientState {
      * {@link frank1o3.statscale.network.ClientScaleNetwork}.
      *
      * @param scale    The player's active (persisted) scale value.
-     * @param maxScale The server's configured maximum scale.
+     * @param maxScale The server's effective maximum scale.
      */
     public static void applySync(double scale, double maxScale) {
         currentScale = scale;
-        serverMaxScale = maxScale;
+        if (hasRange) {
+            ScaleClientState.maxScale = maxScale;
+        }
+    }
+
+    /** Records the complete selectable range sent by the server. */
+    public static void applyRange(double minScale, double maxScale) {
+        ScaleClientState.minScale = minScale;
+        ScaleClientState.maxScale = maxScale;
+        hasRange = true;
     }
 
     /**
@@ -102,6 +113,8 @@ public final class ScaleClientState {
      */
     public static void reset() {
         currentScale = DEFAULT_SCALE;
-        serverMaxScale = DEFAULT_MAX_SCALE;
+        minScale = 0.0;
+        maxScale = 0.0;
+        hasRange = false;
     }
 }

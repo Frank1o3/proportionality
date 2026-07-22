@@ -49,9 +49,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  *
  * <p>
- * The slider range is driven by {@link ScaleClientState}: the minimum is always
- * {@code 0.1}, and the maximum is whatever the server advertised on login
- * (defaulting to {@code 16.0} for singleplayer / offline use).
+ * The slider range is driven entirely by the bounds advertised by the server.
  */
 @Environment(EnvType.CLIENT)
 public class ScaleScreen extends Screen {
@@ -97,7 +95,7 @@ public class ScaleScreen extends Screen {
     /**
      * Minimum scale the slider can represent. Matches the command argument floor.
      */
-    private double SCALE_MIN = 0.1f;
+    private double SCALE_MIN;
     /** Step size: 0.1 increments, matching the Scale.java exponent resolution. */
     private double SCALE_STEP = 0.1f;
 
@@ -124,10 +122,10 @@ public class ScaleScreen extends Screen {
      * @param parent The screen to return to on close, or {@code null} to return
      *               to the game.
      */
-    public ScaleScreen(@Nullable Screen parent, double minScale) {
+    public ScaleScreen(@Nullable Screen parent) {
         super(Component.translatable("gui.proportionality.scale.title"));
         this.parent = parent;
-        this.SCALE_MIN = minScale;
+        this.SCALE_MIN = ScaleClientState.getMinScale();
     }
 
     // -------------------------------------------------------------------------
@@ -145,7 +143,7 @@ public class ScaleScreen extends Screen {
         int sliderX = cx - SLIDER_WIDTH / 2;
         int sliderY = panelY + SLIDER_TOP_OFFSET;
 
-        double serverMax = ScaleClientState.getServerMaxScale();
+        double serverMax = ScaleClientState.getMaxScale();
 
         slider = ScaleSlider.builder()
                 .bounds(sliderX, sliderY, SLIDER_WIDTH, SLIDER_HEIGHT)
