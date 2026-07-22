@@ -14,6 +14,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,8 +27,8 @@ import java.util.UUID;
  *
  * <pre>
  * {
- *   "550e8400-e29b-41d4-a716-446655440000": { "scale": 3.5, "frozen": false },
- *   "6ba7b810-9dad-11d1-80b4-00c04fd430c8": { "scale": 1.0, "frozen": true }
+ *   "550e8400-e29b-41d4-a716-446655440000":
+ *     { "scale": 3.5, "frozen": false, "lastSeenEpochMillis": 1770000000000 }
  * }
  * </pre>
  *
@@ -54,8 +55,8 @@ public final class ScaleStorage {
      * A player's persisted scale plus whether an operator has frozen it against
      * further self-service changes via {@code /scale set} or the scale screen.
      */
-    public record PlayerScaleData(double scale, boolean frozen) {
-        public static final PlayerScaleData DEFAULT = new PlayerScaleData(DEFAULT_SCALE, false);
+    public record PlayerScaleData(double scale, boolean frozen, long lastSeenEpochMillis) {
+        public static final PlayerScaleData DEFAULT = new PlayerScaleData(DEFAULT_SCALE, false, 0L);
     }
 
     // -------------------------------------------------------------------------
@@ -95,6 +96,8 @@ public final class ScaleStorage {
             return;
         }
 
+        boolean[] migrated = { false };
+        long migrationTimestamp = System.currentTimeMillis();
         try (Reader reader = Files.newBufferedReader(filePath)) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             root.entrySet().forEach(entry -> {
@@ -104,13 +107,18 @@ public final class ScaleStorage {
 
                     PlayerScaleData parsed;
                     if (value.isJsonPrimitive()) {
-                        // Legacy format: bare number, never frozen.
-                        parsed = new PlayerScaleData(value.getAsDouble(), false);
+                        // Legacy format: bare number, never frozen or timestamped.
+                        parsed = new PlayerScaleData(value.getAsDouble(), false, migrationTimestamp);
+                        migrated[0] = true;
                     } else {
                         JsonObject obj = value.getAsJsonObject();
                         double scale = obj.has("scale") ? obj.get("scale").getAsDouble() : DEFAULT_SCALE;
                         boolean frozen = obj.has("frozen") && obj.get("frozen").getAsBoolean();
-                        parsed = new PlayerScaleData(scale, frozen);
+                        long lastSeen = obj.has("lastSeenEpochMillis")
+                                ? obj.get("lastSeenEpochMillis").getAsLong()
+                                : migrationTimestamp;
+                        migrated[0] |= !obj.has("lastSeenEpochMillis");
+                        parsed = new PlayerScaleData(scale, frozen, lastSeen);
                     }
                     data.put(uuid, parsed);
                 } catch (IllegalArgumentException | IllegalStateException e) {
@@ -118,6 +126,9 @@ public final class ScaleStorage {
                             "[Proportionality] Skipping malformed entry '{}' in scale data file.", entry.getKey());
                 }
             });
+            if (migrated[0]) {
+                dirty = true;
+            }
             Proportionality.LOGGER.info("[Proportionality] Loaded scale data for {} player(s).", data.size());
         } catch (IOException e) {
             Proportionality.LOGGER.error("[Proportionality] Failed to read scale data file: {}", e.getMessage());
@@ -138,6 +149,7 @@ public final class ScaleStorage {
             JsonObject entry = new JsonObject();
             entry.addProperty("scale", value.scale());
             entry.addProperty("frozen", value.frozen());
+            entry.addProperty("lastSeenEpochMillis", value.lastSeenEpochMillis());
             root.add(uuid.toString(), entry);
         });
 
@@ -172,20 +184,63 @@ public final class ScaleStorage {
         if (isFrozen(uuid)) {
             return false;
         }
-        data.put(uuid, new PlayerScaleData(scale, false));
+        data.put(uuid, new PlayerScaleData(scale, false, System.currentTimeMillis()));
         dirty = true;
         return true;
     }
 
     public void adminSetScale(UUID uuid, double scale, boolean frozen) {
-        data.put(uuid, new PlayerScaleData(scale, frozen));
+        data.put(uuid, new PlayerScaleData(scale, frozen, System.currentTimeMillis()));
         dirty = true;
     }
 
     public void setFrozen(UUID uuid, boolean frozen) {
         PlayerScaleData current = get(uuid);
-        data.put(uuid, new PlayerScaleData(current.scale(), frozen));
+        data.put(uuid, new PlayerScaleData(current.scale(), frozen, System.currentTimeMillis()));
         dirty = true;
+    }
+
+    /**
+     * Refreshes the activity timestamp for an existing scale entry. Players who
+     * have never had scale data do not create an entry merely by joining.
+     */
+    public PlayerScaleData touch(UUID uuid) {
+        PlayerScaleData current = data.get(uuid);
+        if (current == null) {
+            return PlayerScaleData.DEFAULT;
+        }
+
+        PlayerScaleData updated = new PlayerScaleData(current.scale(), current.frozen(), System.currentTimeMillis());
+        data.put(uuid, updated);
+        dirty = true;
+        return updated;
+    }
+
+    /**
+     * Removes entries for players inactive longer than the configured retention
+     * period. A non-positive value disables cleanup.
+     *
+     * @return the number of removed scale entries
+     */
+    public int cleanupExpired(int retentionDays) {
+        if (retentionDays <= 0) {
+            return 0;
+        }
+
+        long retentionMillis = retentionDays * 24L * 60L * 60L * 1000L;
+        long cutoff = System.currentTimeMillis() - retentionMillis;
+        int removed = 0;
+        Iterator<Map.Entry<UUID, PlayerScaleData>> entries = data.entrySet().iterator();
+        while (entries.hasNext()) {
+            if (entries.next().getValue().lastSeenEpochMillis() < cutoff) {
+                entries.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            dirty = true;
+        }
+        return removed;
     }
 
     /** Writes to disk only if something changed since the last save. */

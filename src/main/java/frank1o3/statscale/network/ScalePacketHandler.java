@@ -132,7 +132,7 @@ public final class ScalePacketHandler {
      */
     public static void syncPlayerScale(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config,
             double minScale, double maxScale) {
-        ScaleStorage.PlayerScaleData saved = storage.get(player.getUUID());
+        ScaleStorage.PlayerScaleData saved = storage.touch(player.getUUID());
         double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
         double clampedScale = Mth.clamp(saved.scale(), minScale, effectiveMax);
 

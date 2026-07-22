@@ -134,6 +134,8 @@ public class Proportionality implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             storage = new ScaleStorage(server);
             storage.load();
+            cleanupExpiredScaleData();
+            storage.saveIfDirty();
             LOGGER.info("[Proportionality] Scale storage loaded.");
         });
 
@@ -146,6 +148,7 @@ public class Proportionality implements ModInitializer {
                 return;
             if (++autosaveTicker >= AUTOSAVE_INTERVAL_TICKS) {
                 autosaveTicker = 0;
+                cleanupExpiredScaleData();
                 storage.saveIfDirty();
             }
         });
@@ -201,6 +204,8 @@ public class Proportionality implements ModInitializer {
                                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
                                 .executes(context -> {
                                     config = ServerScaleConfig.load();
+                                    cleanupExpiredScaleData();
+                                    storage.saveIfDirty();
                                     context.getSource().sendSuccess(
                                             () -> Component.literal("[Proportionality] Config reloaded."), true);
 
@@ -246,5 +251,13 @@ public class Proportionality implements ModInitializer {
 
     public static double getMaxcale() {
         return maxScale;
+    }
+
+    private static void cleanupExpiredScaleData() {
+        int removed = storage.cleanupExpired(config.scaleDataRetentionDays);
+        if (removed > 0) {
+            LOGGER.info("[Proportionality] Removed {} expired scale data entr{}.", removed,
+                    removed == 1 ? "y" : "ies");
+        }
     }
 }

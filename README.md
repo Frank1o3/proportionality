@@ -91,6 +91,8 @@ This makes it possible to fine-tune how attributes such as health, movement spee
 
 `maxScaleLimit` controls the maximum size players may select. The effective maximum is the lower of `maxScaleLimit` and Minecraft's actual `minecraft:scale` attribute maximum. For example, setting `maxScaleLimit` to `2` limits players to double size; setting it to `16` permits up to 16x size when the attribute supports it.
 
+`scaleDataRetentionDays` controls automatic cleanup of inactive players' saved scale data. It defaults to `30`; set it to `0` to keep data indefinitely. Entries are removed after the player has not joined for the configured number of days, keeping `<world>/data/proportionality_scales.json` from growing indefinitely.
+
 The configuration can be reloaded using:
 
 ```text

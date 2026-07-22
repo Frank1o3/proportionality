@@ -17,6 +17,8 @@ public class ServerScaleConfig {
 
     // Default configuration values
     public double maxScaleLimit = 16.0f;
+    /** Days an inactive player's scale entry is retained; 0 disables cleanup. */
+    public int scaleDataRetentionDays = 30;
     public double exponentMaxHealth = 1;
     public double exponentAttackDamage = 0.9;
     public double exponentReach = 0.8;
