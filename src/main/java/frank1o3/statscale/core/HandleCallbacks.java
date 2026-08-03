@@ -7,6 +7,10 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 /**
  * Handles the application of scale-derived attribute profiles to
  * {@link ServerPlayer} instances.
@@ -35,6 +39,9 @@ public class HandleCallbacks {
     private static final Identifier STEP_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale", "player_step");
     private static final Identifier REACH_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale", "player_reach");
     private static final Identifier FALL_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale", "player_fall");
+    private static final Identifier BLOCK_REACH_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale",
+            "player_block_reach");
+    private static final Map<UUID, ScaleProfileCache.AppliedProfileState> LAST_APPLIED_PROFILES = new HashMap<>();
 
     // -------------------------------------------------------------------------
     // Core API
@@ -62,6 +69,12 @@ public class HandleCallbacks {
      *                 server-configured maximum, whichever is smaller.
      */
     public static void applyScaleProfile(ServerPlayer player, double scale, double maxScale, ServerScaleConfig config) {
+        String configSignature = createConfigSignature(config);
+        ScaleProfileCache.AppliedProfileState previous = LAST_APPLIED_PROFILES.get(player.getUUID());
+        if (shouldReuseCachedProfile(previous, scale, maxScale, configSignature)) {
+            return;
+        }
+
         Scale.ScaleProfile profile = Scale.calculate(scale, maxScale, config);
         float healthPercentage = player.getHealth() / player.getMaxHealth();
 
@@ -72,11 +85,13 @@ public class HandleCallbacks {
         applyModifier(player.getAttribute(Attributes.ATTACK_DAMAGE), DAMAGE_MODIFIER_ID, profile.attackDamage());
         applyModifier(player.getAttribute(Attributes.STEP_HEIGHT), STEP_MODIFIER_ID, profile.stepHeight());
         applyModifier(player.getAttribute(Attributes.ENTITY_INTERACTION_RANGE), REACH_MODIFIER_ID, profile.reach());
+        applyModifier(player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE), BLOCK_REACH_MODIFIER_ID,
+                profile.reach() * 0.6f);
         applyModifier(player.getAttribute(Attributes.SAFE_FALL_DISTANCE), FALL_MODIFIER_ID, profile.fallDistance());
-
         float newMaxHeath = player.getMaxHealth();
         player.setHealth(newMaxHeath * healthPercentage);
-
+        LAST_APPLIED_PROFILES.put(player.getUUID(),
+                new ScaleProfileCache.AppliedProfileState(scale, maxScale, configSignature));
     }
 
     // -------------------------------------------------------------------------
@@ -109,5 +124,23 @@ public class HandleCallbacks {
         AttributeModifier modifier = new AttributeModifier(id, delta, AttributeModifier.Operation.ADD_VALUE);
         instance.addPermanentModifier(modifier);
         Attributes.MAX_HEALTH.value();
+    }
+
+    static String createConfigSignature(ServerScaleConfig config) {
+        return String.join(":",
+                Double.toString(config.exponentMaxHealth),
+                Double.toString(config.exponentAttackDamage),
+                Double.toString(config.exponentReach),
+                Double.toString(config.exponentStepHeight),
+                Double.toString(config.exponentJumpStrength),
+                Double.toString(config.exponentMovementSpeed),
+                Double.toString(config.exponentFallDistance),
+                Double.toString(config.exponentKnockBackResistance));
+    }
+
+    static boolean shouldReuseCachedProfile(ScaleProfileCache.AppliedProfileState previous, double scale,
+            double maxScale,
+            String configSignature) {
+        return ScaleProfileCache.shouldReuseCachedProfile(previous, scale, maxScale, configSignature);
     }
 }

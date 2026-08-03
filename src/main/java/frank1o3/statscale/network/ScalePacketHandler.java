@@ -149,6 +149,12 @@ public final class ScalePacketHandler {
                 clampedScale, effectiveMax, player.getName().getString());
     }
 
+    public static void syncPlayerState(ServerPlayer player, ScaleStorage storage, ServerScaleConfig config,
+            double minScale, double maxScale) {
+        syncRange(player, config, minScale, maxScale);
+        syncPlayerScale(player, storage, config, minScale, maxScale);
+    }
+
     public static void syncRange(ServerPlayer player, ServerScaleConfig config, double minScale, double maxScale) {
         double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
         ServerPlayNetworking.send(player, new RangeSyncPayload(minScale, effectiveMax));
@@ -231,7 +237,8 @@ public final class ScalePacketHandler {
         }
 
         ScaleStorage.PlayerScaleData data = storage.get(target.getUUID());
-        double effectiveMax = resolveEffectiveMax(target, Proportionality.getMinScale(), maxScale, Proportionality.getConfig());
+        double effectiveMax = resolveEffectiveMax(target, Proportionality.getMinScale(), maxScale,
+                Proportionality.getConfig());
 
         ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
                 true, target.getUUID(), target.getName().getString(), data.scale(), effectiveMax, data.frozen()));

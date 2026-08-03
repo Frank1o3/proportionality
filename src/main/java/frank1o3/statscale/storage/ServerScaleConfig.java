@@ -13,7 +13,6 @@ import java.io.FileWriter;
 public class ServerScaleConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("proportionality");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final File FILE = new File(FabricLoader.getInstance().getConfigDir().toFile(), "statscale.json");
 
     // Default configuration values
     public double maxScaleLimit = 16.0f;
@@ -29,8 +28,9 @@ public class ServerScaleConfig {
     public double exponentKnockBackResistance = 0.25;
 
     public static ServerScaleConfig load() {
-        if (FILE.exists()) {
-            try (FileReader reader = new FileReader(FILE)) {
+        File file = getConfigFile();
+        if (file.exists()) {
+            try (FileReader reader = new FileReader(file)) {
                 ServerScaleConfig config = GSON.fromJson(reader, ServerScaleConfig.class);
                 if (config != null) {
                     return config;
@@ -48,10 +48,19 @@ public class ServerScaleConfig {
     }
 
     public void save() {
-        try (FileWriter writer = new FileWriter(FILE)) {
+        File file = getConfigFile();
+        try (FileWriter writer = new FileWriter(file)) {
             GSON.toJson(this, writer);
         } catch (Exception e) {
             LOGGER.error("[Proportionality] Failed to write config file: {}", e.getMessage());
+        }
+    }
+
+    private static File getConfigFile() {
+        try {
+            return new File(FabricLoader.getInstance().getConfigDir().toFile(), "statscale.json");
+        } catch (Throwable ignored) {
+            return new File(System.getProperty("user.dir"), "statscale.json");
         }
     }
 }

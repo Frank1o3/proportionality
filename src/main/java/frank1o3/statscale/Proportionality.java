@@ -21,6 +21,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -140,7 +141,7 @@ public class Proportionality implements ModInitializer {
         });
 
         ServerPlayConnectionEvents.JOIN.register((listener, sender, server) -> {
-            ScalePacketHandler.syncRange(listener.player, config, minScale, maxScale);
+            syncPlayerState(listener.player);
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -175,12 +176,11 @@ public class Proportionality implements ModInitializer {
                         handler.player.getName().getString());
                 return;
             }
-            ScalePacketHandler.syncPlayerScale(handler.player, storage, config, minScale, maxScale);
+            syncPlayerState(handler.player);
         });
 
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
-            ScalePacketHandler.syncRange(newPlayer, config, minScale, maxScale);
-            ScalePacketHandler.syncPlayerScale(newPlayer, storage, config, minScale, maxScale);
+            syncPlayerState(newPlayer);
         });
     }
 
@@ -211,11 +211,7 @@ public class Proportionality implements ModInitializer {
 
                                     if (context.getSource().getServer() != null) {
                                         context.getSource().getServer().getPlayerList().getPlayers()
-                                                .forEach(p -> {
-                                                    ScalePacketHandler.syncRange(p, config, minScale, maxScale);
-                                                    ScalePacketHandler.syncPlayerScale(p, storage, config, minScale,
-                                                            maxScale);
-                                                });
+                                                .forEach(Proportionality::syncPlayerState);
                                     }
                                     return 1;
                                 }))));
@@ -251,6 +247,13 @@ public class Proportionality implements ModInitializer {
 
     public static double getMaxcale() {
         return maxScale;
+    }
+
+    private static void syncPlayerState(ServerPlayer player) {
+        if (storage == null) {
+            return;
+        }
+        ScalePacketHandler.syncPlayerState(player, storage, config, minScale, maxScale);
     }
 
     private static void cleanupExpiredScaleData() {

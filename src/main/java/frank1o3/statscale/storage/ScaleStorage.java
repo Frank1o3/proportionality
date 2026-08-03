@@ -17,6 +17,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Persists player scale values (and freeze state) in a single JSON file
@@ -43,7 +47,13 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     public static final double DEFAULT_SCALE = 1.0;
-    private volatile boolean dirty = false;
+    private final AtomicBoolean dirty = new AtomicBoolean(false);
+    private final AtomicBoolean saveScheduled = new AtomicBoolean(false);
+    private final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "proportionality-save");
+        thread.setDaemon(true);
+        return thread;
+    });
     private static final String FILE_NAME = "proportionality_scales.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -63,7 +73,7 @@ public final class ScaleStorage {
     // State
     // -------------------------------------------------------------------------
 
-    private final Map<UUID, PlayerScaleData> data = new HashMap<>();
+    private final Map<UUID, PlayerScaleData> data = new ConcurrentHashMap<>();
     private final Path filePath;
 
     // -------------------------------------------------------------------------
@@ -127,7 +137,7 @@ public final class ScaleStorage {
                 }
             });
             if (migrated[0]) {
-                dirty = true;
+                dirty.set(true);
             }
             Proportionality.LOGGER.info("[Proportionality] Loaded scale data for {} player(s).", data.size());
         } catch (IOException e) {
@@ -137,6 +147,10 @@ public final class ScaleStorage {
 
     /** Writes the current in-memory map back to disk. */
     public void save() {
+        saveSnapshot(new HashMap<>(data));
+    }
+
+    private void saveSnapshot(Map<UUID, PlayerScaleData> snapshot) {
         try {
             Files.createDirectories(filePath.getParent());
         } catch (IOException e) {
@@ -145,7 +159,7 @@ public final class ScaleStorage {
         }
 
         JsonObject root = new JsonObject();
-        data.forEach((uuid, value) -> {
+        snapshot.forEach((uuid, value) -> {
             JsonObject entry = new JsonObject();
             entry.addProperty("scale", value.scale());
             entry.addProperty("frozen", value.frozen());
@@ -185,19 +199,19 @@ public final class ScaleStorage {
             return false;
         }
         data.put(uuid, new PlayerScaleData(scale, false, System.currentTimeMillis()));
-        dirty = true;
+        dirty.set(true);
         return true;
     }
 
     public void adminSetScale(UUID uuid, double scale, boolean frozen) {
         data.put(uuid, new PlayerScaleData(scale, frozen, System.currentTimeMillis()));
-        dirty = true;
+        dirty.set(true);
     }
 
     public void setFrozen(UUID uuid, boolean frozen) {
         PlayerScaleData current = get(uuid);
         data.put(uuid, new PlayerScaleData(current.scale(), frozen, System.currentTimeMillis()));
-        dirty = true;
+        dirty.set(true);
     }
 
     /**
@@ -212,7 +226,7 @@ public final class ScaleStorage {
 
         PlayerScaleData updated = new PlayerScaleData(current.scale(), current.frozen(), System.currentTimeMillis());
         data.put(uuid, updated);
-        dirty = true;
+        dirty.set(true);
         return updated;
     }
 
@@ -238,16 +252,32 @@ public final class ScaleStorage {
             }
         }
         if (removed > 0) {
-            dirty = true;
+            dirty.set(true);
         }
         return removed;
     }
 
     /** Writes to disk only if something changed since the last save. */
     public void saveIfDirty() {
-        if (!dirty)
+        if (!dirty.get()) {
             return;
-        save();
-        dirty = false;
+        }
+        if (!saveScheduled.compareAndSet(false, true)) {
+            return;
+        }
+
+        saveExecutor.execute(() -> {
+            try {
+                if (!dirty.compareAndSet(true, false)) {
+                    return;
+                }
+                saveSnapshot(new HashMap<>(data));
+            } finally {
+                saveScheduled.set(false);
+                if (dirty.get()) {
+                    saveIfDirty();
+                }
+            }
+        });
     }
 }

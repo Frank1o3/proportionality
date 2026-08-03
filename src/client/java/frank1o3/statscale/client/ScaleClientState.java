@@ -70,6 +70,18 @@ public final class ScaleClientState {
         return hasRange;
     }
 
+    /**
+     * Returns a mild animation factor for the local player model. Larger scales
+     * slightly slow the walk-cycle so it feels more natural when the movement
+     * speed attribute has also been scaled up by the server.
+     */
+    public static float getAnimationScaleFactor() {
+        if (currentScale <= 1.0) {
+            return 1.0f;
+        }
+        return (float) Math.max(0.55, 1.0 / Math.pow(currentScale, 0.25));
+    }
+
     // -------------------------------------------------------------------------
     // Mutation (called from network handler only)
     // -------------------------------------------------------------------------
