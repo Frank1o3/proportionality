@@ -2,9 +2,6 @@ package frank1o3.statscale.client.gui.screen;
 
 import frank1o3.statscale.client.AdminScaleClientState;
 import frank1o3.statscale.client.network.ClientScaleNetwork;
-import frank1o3.statscale.client.gui.BaseScaleScreen;
-import frank1o3.statscale.client.gui.ScaleButton;
-import frank1o3.statscale.client.gui.ScaleSlider;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -19,6 +16,10 @@ import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.frank1o3.franklylib.client.gui.FranklyButton;
+import com.frank1o3.franklylib.client.gui.FranklySlider;
+import com.frank1o3.franklylib.client.gui.BaseFranklyScreen;
+
 /**
  * Operator-only screen for inspecting and overriding a connected player's
  * scale, including freezing it against further self-service changes.
@@ -30,15 +31,15 @@ import org.jetbrains.annotations.Nullable;
  * any capability by itself.
  */
 @Environment(EnvType.CLIENT)
-public class AdminScaleScreen extends BaseScaleScreen {
+public class AdminScaleScreen extends BaseFranklyScreen {
 
     private static final int PANEL_WIDTH = 240;
     private static final int PANEL_HEIGHT = 140;
     private double SCALE_MIN = 0.1f;
 
     private EditBox nameBox;
-    private @Nullable ScaleSlider slider;
-    private @Nullable ScaleButton freezeToggle;
+    private @Nullable FranklySlider slider;
+    private @Nullable FranklyButton freezeToggle;
     private boolean frozen;
     private @Nullable String resolvedName;
     private static final int MAX_SUGGESTIONS = 5;
@@ -69,7 +70,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
         nameBox.setResponder(this::updateSuggestions);
         addRenderableWidget(nameBox);
 
-        addRenderableWidget(ScaleButton.builder()
+        addRenderableWidget(FranklyButton.builder()
                 .bounds(cx + 54, py + 26, 60, 18)
                 .message(Component.translatable("gui.proportionality.admin.lookup"))
                 .onPress(btn -> {
@@ -99,7 +100,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
         int py = panelY();
         int cx = width / 2;
 
-        slider = ScaleSlider.builder()
+        slider = FranklySlider.builder()
                 .bounds(cx - 90, py + 56, 180, 20)
                 .range(SCALE_MIN, result.maxScale())
                 .step(0.1)
@@ -109,7 +110,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
                 .build();
         addRenderableWidget(slider);
 
-        freezeToggle = ScaleButton.builder()
+        freezeToggle = FranklyButton.builder()
                 .bounds(cx - 90, py + 82, 86, 18)
                 .message(frozenLabel())
                 .onPress(btn -> {
@@ -119,7 +120,7 @@ public class AdminScaleScreen extends BaseScaleScreen {
                 .build();
         addRenderableWidget(freezeToggle);
 
-        addRenderableWidget(ScaleButton.builder()
+        addRenderableWidget(FranklyButton.builder()
                 .bounds(cx + 4, py + 82, 86, 18)
                 .message(Component.translatable("gui.proportionality.admin.apply"))
                 .onPress(btn -> {

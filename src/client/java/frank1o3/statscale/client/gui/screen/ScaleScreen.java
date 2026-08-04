@@ -1,8 +1,6 @@
 package frank1o3.statscale.client.gui.screen;
 
 import frank1o3.statscale.client.ScaleClientState;
-import frank1o3.statscale.client.gui.ScaleButton;
-import frank1o3.statscale.client.gui.ScaleSlider;
 import frank1o3.statscale.client.network.ClientScaleNetwork;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -13,13 +11,16 @@ import net.minecraft.server.permissions.Permissions;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.frank1o3.franklylib.client.gui.FranklyButton;
+import com.frank1o3.franklylib.client.gui.FranklySlider;
+
 /**
  * The Proportionality scale selection screen.
  *
  * <p>
  * Opened via the keybind registered in
  * {@link frank1o3.statscale.client.ScaleKeybind}.
- * Displays a {@link ScaleSlider} for choosing a scale, a Done button to close
+ * Displays a {@link FranklySlider} for choosing a scale, a Done button to close
  * the screen, and a Reset button to snap the player back to the default scale
  * of {@code 1.0}.
  *
@@ -110,7 +111,7 @@ public class ScaleScreen extends Screen {
      * Reference kept so the Reset button can snap the slider position to 1.0
      * without the player having to drag it there manually.
      */
-    private ScaleSlider slider;
+    private FranklySlider slider;
 
     // -------------------------------------------------------------------------
     // Construction
@@ -145,7 +146,7 @@ public class ScaleScreen extends Screen {
 
         double serverMax = ScaleClientState.getMaxScale();
 
-        slider = ScaleSlider.builder()
+        slider = FranklySlider.builder()
                 .bounds(sliderX, sliderY, SLIDER_WIDTH, SLIDER_HEIGHT)
                 .range(SCALE_MIN, serverMax)
                 .step(SCALE_STEP)
@@ -168,14 +169,14 @@ public class ScaleScreen extends Screen {
         int resetX = doneX + BUTTON_WIDTH + BUTTON_GAP;
 
         // Done
-        addRenderableWidget(ScaleButton.builder()
+        addRenderableWidget(FranklyButton.builder()
                 .bounds(doneX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .message(Component.translatable("gui.done"))
                 .onPress(btn -> onClose())
                 .build());
 
         // Reset — sends scale 1.0 to the server and snaps the slider visually.
-        addRenderableWidget(ScaleButton.builder()
+        addRenderableWidget(FranklyButton.builder()
                 .bounds(resetX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .message(Component.translatable("gui.proportionality.scale.reset"))
                 .onPress(btn -> {
@@ -185,7 +186,7 @@ public class ScaleScreen extends Screen {
                 .build());
 
         if (minecraft.player != null && minecraft.player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)) {
-            addRenderableWidget(ScaleButton.builder()
+            addRenderableWidget(FranklyButton.builder()
                     .bounds(cx - 40, buttonsY + BUTTON_HEIGHT + 6, 80, 18)
                     .message(Component.translatable("gui.proportionality.admin.open"))
                     .onPress(btn -> minecraft.gui.setScreen(new AdminScaleScreen(this, SCALE_MIN)))
