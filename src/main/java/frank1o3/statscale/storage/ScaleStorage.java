@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import frank1o3.statscale.Proportionality;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -81,7 +82,7 @@ public final class ScaleStorage {
     // -------------------------------------------------------------------------
 
     public ScaleStorage(MinecraftServer server) {
-        Path dataDir = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("data");
+        Path dataDir = server.getWorldPath(LevelResource.ROOT).resolve("data");
         this.filePath = dataDir.resolve(FILE_NAME);
     }
 

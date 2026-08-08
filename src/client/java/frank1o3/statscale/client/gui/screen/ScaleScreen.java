@@ -1,181 +1,195 @@
 package frank1o3.statscale.client.gui.screen;
 
+import com.frank1o3.franklylib.client.gui.BaseFranklyScreen;
+import com.frank1o3.franklylib.client.gui.FranklyButton;
+import com.frank1o3.franklylib.client.gui.FranklySlider;
+import com.frank1o3.franklylib.client.gui.FranklyTabBar;
+import frank1o3.statscale.client.AdminScaleClientState;
 import frank1o3.statscale.client.ScaleClientState;
 import frank1o3.statscale.client.network.ClientScaleNetwork;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.permissions.Permissions;
-
 import org.jetbrains.annotations.Nullable;
 
-import com.frank1o3.franklylib.client.gui.FranklyButton;
-import com.frank1o3.franklylib.client.gui.FranklySlider;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
- * The Proportionality scale selection screen.
- *
- * <p>
- * Opened via the keybind registered in
- * {@link frank1o3.statscale.client.ScaleKeybind}.
- * Displays a {@link FranklySlider} for choosing a scale, a Done button to close
- * the screen, and a Reset button to snap the player back to the default scale
- * of {@code 1.0}.
- *
- * <h2>Data flow</h2>
- *
- * <pre>
- *  Player moves slider
- *       │
- *       ▼  onValueChanged callback (live preview – no packet)
- *  slider label updates
- *
- *  Player releases / presses Enter
- *       │
- *       ▼  onValueCommitted callback
- *  {@link ClientScaleNetwork#sendScaleRequest} ──► server
- *       │
- *       ▼  server sends ScaleSyncPayload back
- *  {@link ScaleClientState#setCurrentScale} updates local cache
- *
- *  Player clicks Reset
- *       │
- *       ▼
- *  {@link ClientScaleNetwork#sendResetRequest} ──► server (scale = 1.0)
- *       │
- *       ▼  server sends ScaleSyncPayload back
- *  slider snaps to 1.0, ScaleClientState updated
- * </pre>
- *
- * <p>
- * The slider range is driven entirely by the bounds advertised by the server.
+ * The Proportionality scale screen. Regular players just see the scale
+ * slider. Operators additionally get a {@link FranklyTabBar} that switches
+ * between the Scale tab and an Admin tab (formerly its own screen,
+ * {@code AdminScaleScreen}) — the tab bar is never even constructed for
+ * non-ops, so there's no way to reach admin controls client-side, and the
+ * server independently re-checks permission on every admin packet regardless.
  */
 @Environment(EnvType.CLIENT)
-public class ScaleScreen extends Screen {
+public class ScaleScreen extends BaseFranklyScreen {
+
+    private enum Section {
+        SCALE(Component.translatable("gui.proportionality.scale.title")),
+        ADMIN(Component.translatable("gui.proportionality.admin.title"));
+
+        final Component label;
+
+        Section(Component label) {
+            this.label = label;
+        }
+    }
 
     // -------------------------------------------------------------------------
     // Layout constants
     // -------------------------------------------------------------------------
 
-    /** Width of the panel background in pixels. */
-    private static final int PANEL_WIDTH = 220;
-    /** Height of the panel background in pixels. */
-    private static final int PANEL_HEIGHT = 120;
+    private static final int PANEL_WIDTH = 240;
+    private static final int PANEL_HEIGHT_BASE = 120;
+    private static final int PANEL_HEIGHT_WITH_TABS = 178;
 
-    /** Width of the slider widget. Fits neatly inside PANEL_WIDTH with padding. */
     private static final int SLIDER_WIDTH = 180;
-    /** Height of the slider widget. */
     private static final int SLIDER_HEIGHT = 20;
-
-    /** Vertical gap between the panel top edge and the slider top edge. */
-    private static final int SLIDER_TOP_OFFSET = 28;
-
-    /**
-     * Width of each bottom button (Done / Reset).
-     * Both buttons share the available width with a small gap between them.
-     */
     private static final int BUTTON_WIDTH = 86;
-    /** Height of each bottom button. */
     private static final int BUTTON_HEIGHT = 20;
-    /** Horizontal gap between the two bottom buttons. */
     private static final int BUTTON_GAP = 8;
-    /** Vertical gap from the bottom of the slider to the top of the buttons. */
     private static final int BUTTONS_TOP_OFFSET = 10;
-
-    /** Colour of the dimmed screen overlay drawn behind the panel. */
-    private static final int OVERLAY_COLOR = 0x88_000000;
-    /** Colour of the panel background. */
-    private static final int PANEL_COLOR = 0xCC_1A1A2E;
-    /** Colour of the panel border. */
-    private static final int BORDER_COLOR = 0xFF_3A3A5E;
-    /** Colour of the title text. */
-    private static final int TITLE_COLOR = 0xFF_FFFFFF;
-
-    /**
-     * Minimum scale the slider can represent. Matches the command argument floor.
-     */
-    private double SCALE_MIN;
-    /** Step size: 0.1 increments, matching the Scale.java exponent resolution. */
-    private double SCALE_STEP = 0.1f;
+    private static final int TAB_BAR_HEIGHT = 18;
+    private static final int MAX_SUGGESTIONS = 5;
+    private static final int SUGGESTION_ROW_HEIGHT = 14;
 
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
 
-    /** The screen to return to when this screen is closed. May be null. */
-    private final @Nullable Screen parent;
+    private final boolean isOp;
+    private final double scaleMin;
+    private final double scaleStep = 0.1;
 
-    /**
-     * Reference kept so the Reset button can snap the slider position to 1.0
-     * without the player having to drag it there manually.
-     */
+    private Section currentSection = Section.SCALE;
+    private @Nullable FranklyTabBar<Section> tabBar;
+
+    // Scale tab
     private FranklySlider slider;
 
-    // -------------------------------------------------------------------------
-    // Construction
-    // -------------------------------------------------------------------------
+    // Admin tab
+    private EditBox adminNameBox;
+    private @Nullable FranklySlider adminSlider;
+    private @Nullable FranklyButton freezeToggle;
+    private boolean frozen;
+    private List<PlayerInfo> suggestions = List.of();
 
-    /**
-     * Creates a new {@link ScaleScreen}.
-     *
-     * @param parent The screen to return to on close, or {@code null} to return
-     *               to the game.
-     */
     public ScaleScreen(@Nullable Screen parent) {
-        super(Component.translatable("gui.proportionality.scale.title"));
-        this.parent = parent;
-        this.SCALE_MIN = ScaleClientState.getMinScale();
+        super(Component.translatable("gui.proportionality.scale.title"), parent,
+                PANEL_WIDTH, resolveIsOp() ? PANEL_HEIGHT_WITH_TABS : PANEL_HEIGHT_BASE);
+        this.isOp = resolveIsOp();
+        this.scaleMin = ScaleClientState.getMinScale();
+    }
+
+    private static boolean resolveIsOp() {
+        var player = Minecraft.getInstance().player;
+        return player != null && player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
     }
 
     // -------------------------------------------------------------------------
-    // Screen lifecycle
+    // Lifecycle
     // -------------------------------------------------------------------------
 
     @Override
     protected void init() {
+        buildTabBar();
+        buildSectionWidgets();
+        AdminScaleClientState.setOnUpdate(this::onAdminStateUpdate);
+    }
+
+    @Override
+    public void removed() {
+        AdminScaleClientState.setOnUpdate(null);
+    }
+
+    private void onAdminStateUpdate() {
+        // Only rebuild if the admin tab is actually the one being looked at —
+        // an update arriving while on the Scale tab shouldn't yank widgets away.
+        if (currentSection == Section.ADMIN) {
+            rebuildContent();
+        }
+    }
+
+    private void rebuildContent() {
+        clearWidgets();
+        buildTabBar();
+        buildSectionWidgets();
+    }
+
+    private void buildSectionWidgets() {
+        if (currentSection == Section.ADMIN) {
+            buildAdminWidgets();
+        } else {
+            buildScaleWidgets();
+        }
+    }
+
+    private int contentTop() {
+        return panelY() + (isOp ? 50 : 28);
+    }
+
+    // -------------------------------------------------------------------------
+    // Tab bar (op only)
+    // -------------------------------------------------------------------------
+
+    private void buildTabBar() {
+        if (!isOp) {
+            return;
+        }
         int cx = width / 2;
-        int cy = height / 2;
+        tabBar = FranklyTabBar.<Section>builder()
+                .bounds(cx - 100, panelY() + 24, 200, TAB_BAR_HEIGHT)
+                .tabs(List.of(Section.SCALE, Section.ADMIN))
+                .labelMapper(section -> section.label)
+                .current(currentSection)
+                .onSelect(section -> {
+                    currentSection = section;
+                    rebuildContent();
+                })
+                .build();
+        addRenderableWidget(tabBar);
+    }
 
-        int panelY = cy - PANEL_HEIGHT / 2;
+    // -------------------------------------------------------------------------
+    // Scale tab
+    // -------------------------------------------------------------------------
 
-        // Slider centred horizontally inside the panel
-        int sliderX = cx - SLIDER_WIDTH / 2;
-        int sliderY = panelY + SLIDER_TOP_OFFSET;
-
-        double serverMax = ScaleClientState.getMaxScale();
+    private void buildScaleWidgets() {
+        int cx = width / 2;
+        int top = contentTop();
 
         slider = FranklySlider.builder()
-                .bounds(sliderX, sliderY, SLIDER_WIDTH, SLIDER_HEIGHT)
-                .range(SCALE_MIN, serverMax)
-                .step(SCALE_STEP)
+                .bounds(cx - SLIDER_WIDTH / 2, top, SLIDER_WIDTH, SLIDER_HEIGHT)
+                .range(scaleMin, ScaleClientState.getMaxScale())
+                .step(scaleStep)
                 .initialValue(ScaleClientState.getCurrentScale())
                 .label(Component.translatable("gui.proportionality.scale.label"))
                 .formatter(v -> Component.literal(String.format("%.1fx", v)))
-                .onValueChanged(v -> {
-                }) // live label update is handled inside ScaleSlider
                 .onValueCommitted(v -> ClientScaleNetwork.sendScaleRequest(v.floatValue()))
                 .build();
-
         addRenderableWidget(slider);
 
-        // ── Bottom buttons (Done | Reset) ────────────────────────────────────
-        int buttonsY = sliderY + SLIDER_HEIGHT + BUTTONS_TOP_OFFSET;
-
-        // Total width occupied by both buttons + gap, centred under the slider.
+        int buttonsY = top + SLIDER_HEIGHT + BUTTONS_TOP_OFFSET;
         int totalButtonsWidth = BUTTON_WIDTH * 2 + BUTTON_GAP;
         int doneX = cx - totalButtonsWidth / 2;
         int resetX = doneX + BUTTON_WIDTH + BUTTON_GAP;
 
-        // Done
         addRenderableWidget(FranklyButton.builder()
                 .bounds(doneX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .message(Component.translatable("gui.done"))
                 .onPress(btn -> onClose())
                 .build());
 
-        // Reset — sends scale 1.0 to the server and snaps the slider visually.
         addRenderableWidget(FranklyButton.builder()
                 .bounds(resetX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .message(Component.translatable("gui.proportionality.scale.reset"))
@@ -184,70 +198,135 @@ public class ScaleScreen extends Screen {
                     slider.setValue(1.0);
                 })
                 .build());
+    }
 
-        if (minecraft.player != null && minecraft.player.permissions().hasPermission(Permissions.COMMANDS_MODERATOR)) {
-            addRenderableWidget(FranklyButton.builder()
-                    .bounds(cx - 40, buttonsY + BUTTON_HEIGHT + 6, 80, 18)
-                    .message(Component.translatable("gui.proportionality.admin.open"))
-                    .onPress(btn -> minecraft.gui.setScreen(new AdminScaleScreen(this, SCALE_MIN)))
-                    .build());
+    // -------------------------------------------------------------------------
+    // Admin tab (ported from the old AdminScaleScreen)
+    // -------------------------------------------------------------------------
+
+    private void buildAdminWidgets() {
+        int cx = width / 2;
+        int top = contentTop();
+
+        adminNameBox = new EditBox(font, cx - 90, top, 140, 18,
+                Component.translatable("gui.proportionality.admin.player"));
+        adminNameBox.setHint(Component.translatable("gui.proportionality.admin.player_hint"));
+        adminNameBox.setResponder(this::updateSuggestions);
+        addRenderableWidget(adminNameBox);
+
+        addRenderableWidget(FranklyButton.builder()
+                .bounds(cx + 54, top, 60, 18)
+                .message(Component.translatable("gui.proportionality.admin.lookup"))
+                .onPress(btn -> {
+                    ClientScaleNetwork.sendAdminQuery(adminNameBox.getValue());
+                    suggestions = List.of();
+                })
+                .build());
+
+        var result = AdminScaleClientState.getLastResult();
+        if (result == null || !result.found()) {
+            adminSlider = null;
+            freezeToggle = null;
+            return;
+        }
+
+        frozen = result.frozen();
+
+        adminSlider = FranklySlider.builder()
+                .bounds(cx - 90, top + 30, 180, 20)
+                .range(scaleMin, result.maxScale())
+                .step(0.1)
+                .initialValue(result.scale())
+                .label(Component.literal(result.name()))
+                .formatter(v -> Component.literal(String.format("%.1fx", v)))
+                .build();
+        addRenderableWidget(adminSlider);
+
+        freezeToggle = FranklyButton.builder()
+                .bounds(cx - 90, top + 56, 86, 18)
+                .message(frozenLabel())
+                .onPress(btn -> {
+                    frozen = !frozen;
+                    btn.setMessage(frozenLabel());
+                })
+                .build();
+        addRenderableWidget(freezeToggle);
+
+        addRenderableWidget(FranklyButton.builder()
+                .bounds(cx + 4, top + 56, 86, 18)
+                .message(Component.translatable("gui.proportionality.admin.apply"))
+                .onPress(btn -> {
+                    if (adminSlider != null) {
+                        ClientScaleNetwork.sendAdminSet(result.target(), adminSlider.getValue(), frozen);
+                    }
+                })
+                .build());
+    }
+
+    private void updateSuggestions(String text) {
+        if (text.isBlank() || minecraft == null || minecraft.getConnection() == null) {
+            suggestions = List.of();
+            return;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        suggestions = minecraft.getConnection().getOnlinePlayers().stream()
+                .filter(info -> info.getProfile().name().toLowerCase(Locale.ROOT).startsWith(lower))
+                .filter(info -> !info.getProfile().name().equalsIgnoreCase(text))
+                .sorted()
+                .limit(MAX_SUGGESTIONS)
+                .collect(Collectors.toList());
+    }
+
+    private Component frozenLabel() {
+        return Component
+                .translatable(frozen ? "gui.proportionality.admin.frozen" : "gui.proportionality.admin.unfrozen");
+    }
+
+    // -------------------------------------------------------------------------
+    // Suggestion dropdown (admin tab only)
+    // -------------------------------------------------------------------------
+
+    @Override
+    protected void renderPanelContent(GuiGraphicsExtractor graphics, int panelX, int panelY, int mouseX, int mouseY,
+            float delta) {
+        if (currentSection != Section.ADMIN || adminNameBox == null) {
+            return;
+        }
+        if (!suggestions.isEmpty() && adminNameBox.isFocused()) {
+            int rowX = adminNameBox.getX();
+            int rowY = adminNameBox.getY() + adminNameBox.getHeight() + 1;
+            int rowWidth = adminNameBox.getWidth();
+
+            for (int i = 0; i < suggestions.size(); i++) {
+                int y = rowY + i * SUGGESTION_ROW_HEIGHT;
+                boolean hovered = mouseX >= rowX && mouseX <= rowX + rowWidth
+                        && mouseY >= y && mouseY <= y + SUGGESTION_ROW_HEIGHT;
+                graphics.fill(rowX, y, rowX + rowWidth, y + SUGGESTION_ROW_HEIGHT, hovered ? 0xCC_444466 : 0xCC_1A1A2E);
+                graphics.text(font, Component.literal(suggestions.get(i).getProfile().name()),
+                        rowX + 3, y + 3, 0xFF_FFFFFF, false);
+            }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 26.2 Render & Extraction Architecture
-    // -------------------------------------------------------------------------
-
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        int cx = this.width / 2;
-        int cy = this.height / 2;
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (currentSection == Section.ADMIN && adminNameBox != null
+                && !suggestions.isEmpty() && adminNameBox.isFocused()) {
+            double mouseX = event.x();
+            double mouseY = event.y();
+            int rowX = adminNameBox.getX();
+            int rowY = adminNameBox.getY() + adminNameBox.getHeight() + 1;
+            int rowWidth = adminNameBox.getWidth();
 
-        int panelX = cx - PANEL_WIDTH / 2;
-        int panelY = cy - PANEL_HEIGHT / 2;
-
-        // 1. Dimmed screen background overlay
-        graphics.fill(0, 0, this.width, this.height, OVERLAY_COLOR);
-
-        // 2. Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, PANEL_COLOR);
-
-        // 3. Panel border
-        renderPanelBorder(graphics, panelX, panelY);
-
-        // 4. Centred title text
-        int titleY = panelY + 8;
-        graphics.text(this.font, this.getTitle(),
-                cx - this.font.width(this.getTitle()) / 2, titleY, TITLE_COLOR, false);
-
-        // 5. Pass layout data downstream to child widgets
-        super.extractRenderState(graphics, mouseX, mouseY, delta);
-    }
-
-    /** Draws the four one-pixel border edges around the panel rectangle. */
-    private void renderPanelBorder(GuiGraphicsExtractor graphics, int x, int y) {
-        // Top
-        graphics.fill(x, y, x + PANEL_WIDTH, y + 1, BORDER_COLOR);
-        // Bottom
-        graphics.fill(x, y + PANEL_HEIGHT - 1, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
-        // Left
-        graphics.fill(x, y, x + 1, y + PANEL_HEIGHT, BORDER_COLOR);
-        // Right
-        graphics.fill(x + PANEL_WIDTH - 1, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
-    }
-
-    // -------------------------------------------------------------------------
-    // Screen behaviour
-    // -------------------------------------------------------------------------
-
-    /** Do not pause the game while this screen is open. */
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    @Override
-    public void onClose() {
-        minecraft.gui.setScreen(parent);
+            for (int i = 0; i < suggestions.size(); i++) {
+                int y = rowY + i * SUGGESTION_ROW_HEIGHT;
+                if (mouseX >= rowX && mouseX <= rowX + rowWidth && mouseY >= y && mouseY <= y + SUGGESTION_ROW_HEIGHT) {
+                    adminNameBox.setValue(suggestions.get(i).getProfile().name());
+                    suggestions = List.of();
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(event, doubleClick);
     }
 }
