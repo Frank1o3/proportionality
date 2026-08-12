@@ -1,5 +1,6 @@
 package frank1o3.statscale;
 
+import com.frank1o3.franklylib.config.FranklyConfigHolder;
 import frank1o3.statscale.network.ScalePacketHandler;
 import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
@@ -10,6 +11,7 @@ import frank1o3.statscale.network.packets.ScaleSyncPayload;
 import frank1o3.statscale.storage.ScaleStorage;
 import frank1o3.statscale.storage.ServerScaleConfig;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -67,6 +69,7 @@ public class Proportionality implements ModInitializer {
      * Only accessed from the server tick thread; no synchronisation needed.
      */
     private static ScaleStorage storage;
+    private static FranklyConfigHolder<ServerScaleConfig> configHolder;
     private static ServerScaleConfig config;
 
     // -------------------------------------------------------------------------
@@ -75,7 +78,10 @@ public class Proportionality implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        config = ServerScaleConfig.load();
+        configHolder = FranklyConfigHolder.builder(ServerScaleConfig.class, ServerScaleConfig::new)
+                .path(FabricLoader.getInstance().getConfigDir().resolve("statscale.json"))
+                .build();
+        config = configHolder.get();
         LOGGER.info("[Proportionality] Configuration loaded successfully.");
 
         registerPackets();
@@ -145,6 +151,7 @@ public class Proportionality implements ModInitializer {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            configHolder.tick();
             if (storage == null)
                 return;
             if (++autosaveTicker >= AUTOSAVE_INTERVAL_TICKS) {
@@ -162,6 +169,7 @@ public class Proportionality implements ModInitializer {
             } else {
                 LOGGER.warn("[Proportionality] Cannot save scale storage: storage is null!");
             }
+            configHolder.flushAndClose();
         });
     }
 
@@ -203,7 +211,8 @@ public class Proportionality implements ModInitializer {
                         .then(Commands.literal("reload")
                                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
                                 .executes(context -> {
-                                    config = ServerScaleConfig.load();
+                                    configHolder.forceReload();
+                                    config = configHolder.get();
                                     cleanupExpiredScaleData();
                                     storage.saveIfDirty();
                                     context.getSource().sendSuccess(
