@@ -4,6 +4,8 @@ Proportionality is a Fabric mod that lets players change their physical size whi
 
 Proportionality is designed for both single-player and multiplayer environments, with scale values managed server-side and synchronized with connected clients.
 
+> **Temporary dependency notice:** The latest version of Proportionality requires [FranklyLib](https://github.com/frank1o3/franklylib), my custom library used for the scale-screen UI and other shared functionality. Until FranklyLib is verified on Modrinth (it is currently under review), download the `.jar` from its [latest GitHub release](https://github.com/frank1o3/franklylib/releases/latest) and place it in the same `mods` folder as Proportionality. You will need FranklyLib installed to use the latest Proportionality release.
+
 ## Features
 
 * Adjust player size through an in-game scale screen.
@@ -122,7 +124,8 @@ When a player joins the server, their saved scale is loaded and synchronized wit
 1. Install **Fabric Loader** for the Minecraft version supported by the mod.
 2. Install **Fabric API**.
 3. Download the Proportionality `.jar` file.
-4. Place the mod in your Minecraft `mods` folder.
+4. Download the `.jar` from the [latest FranklyLib GitHub release](https://github.com/frank1o3/franklylib/releases/latest). This is required until its Modrinth listing is approved.
+5. Place both `.jar` files in your Minecraft `mods` folder.
 
 For multiplayer servers, Proportionality should be installed on the server. Clients should also have the mod installed to access the client-side scale adjustment screen and keybind.
 
