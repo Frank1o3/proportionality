@@ -1,9 +1,6 @@
 name: Build and Release Fabric Mod
 
 on:
-  push:
-    branches:
-      - "**"
   pull_request:
   workflow_dispatch:
     inputs:
