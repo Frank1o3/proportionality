@@ -4,6 +4,8 @@ import com.frank1o3.franklylib.client.gui.BaseFranklyScreen;
 import com.frank1o3.franklylib.client.gui.FranklyButton;
 import com.frank1o3.franklylib.client.gui.FranklySlider;
 import com.frank1o3.franklylib.client.gui.FranklyTabBar;
+import com.frank1o3.franklylib.client.gui.FranklyTextBox;
+import com.frank1o3.franklylib.client.gui.style.FranklyUiStyle;
 import frank1o3.statscale.client.AdminScaleClientState;
 import frank1o3.statscale.client.ScaleClientState;
 import frank1o3.statscale.client.network.ClientScaleNetwork;
@@ -16,6 +18,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.permissions.Permissions;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +65,10 @@ public class ScaleScreen extends BaseFranklyScreen {
     private static final int TAB_BAR_HEIGHT = 18;
     private static final int MAX_SUGGESTIONS = 5;
     private static final int SUGGESTION_ROW_HEIGHT = 14;
+    private static final Identifier PANEL_STYLE = Identifier.fromNamespaceAndPath("proportionality", "scale_studio");
+    private static final Identifier CONTROL_STYLE = Identifier.fromNamespaceAndPath("proportionality", "control");
+    private static final Identifier ACCENT_STYLE = Identifier.fromNamespaceAndPath("proportionality", "accent");
+    private static final Identifier HOVER_ANIMATION = Identifier.fromNamespaceAndPath("proportionality", "soft_lift");
 
     // -------------------------------------------------------------------------
     // State
@@ -78,7 +85,7 @@ public class ScaleScreen extends BaseFranklyScreen {
     private FranklySlider slider;
 
     // Admin tab
-    private EditBox adminNameBox;
+    private FranklyTextBox adminNameBox;
     private @Nullable FranklySlider adminSlider;
     private @Nullable FranklyButton freezeToggle;
     private boolean frozen;
@@ -89,6 +96,7 @@ public class ScaleScreen extends BaseFranklyScreen {
                 PANEL_WIDTH, resolveIsOp() ? PANEL_HEIGHT_WITH_TABS : PANEL_HEIGHT_BASE);
         this.isOp = resolveIsOp();
         this.scaleMin = ScaleClientState.getMinScale();
+        setUiStyle(PANEL_STYLE);
     }
 
     private static boolean resolveIsOp() {
@@ -156,6 +164,7 @@ public class ScaleScreen extends BaseFranklyScreen {
                     currentSection = section;
                     rebuildContent();
                 })
+                .style(CONTROL_STYLE)
                 .build();
         addRenderableWidget(tabBar);
     }
@@ -176,6 +185,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                 .label(Component.translatable("gui.proportionality.scale.label"))
                 .formatter(v -> Component.literal(String.format("%.1fx", v)))
                 .onValueCommitted(v -> ClientScaleNetwork.sendScaleRequest(v.floatValue()))
+                .style(CONTROL_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build();
         addRenderableWidget(slider);
 
@@ -188,6 +199,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                 .bounds(doneX, buttonsY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .message(Component.translatable("gui.done"))
                 .onPress(btn -> onClose())
+                .style(ACCENT_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build());
 
         addRenderableWidget(FranklyButton.builder()
@@ -197,6 +210,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                     ClientScaleNetwork.sendResetRequest();
                     slider.setValue(1.0);
                 })
+                .style(CONTROL_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build());
     }
 
@@ -208,10 +223,11 @@ public class ScaleScreen extends BaseFranklyScreen {
         int cx = width / 2;
         int top = contentTop();
 
-        adminNameBox = new EditBox(font, cx - 90, top, 140, 18,
-                Component.translatable("gui.proportionality.admin.player"));
-        adminNameBox.setHint(Component.translatable("gui.proportionality.admin.player_hint"));
-        adminNameBox.setResponder(this::updateSuggestions);
+        adminNameBox = FranklyTextBox.builder()
+                .bounds(cx - 90, top, 140, 18)
+                .onChanged(this::updateSuggestions)
+                .style(CONTROL_STYLE)
+                .build();
         addRenderableWidget(adminNameBox);
 
         addRenderableWidget(FranklyButton.builder()
@@ -221,6 +237,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                     ClientScaleNetwork.sendAdminQuery(adminNameBox.getValue());
                     suggestions = List.of();
                 })
+                .style(CONTROL_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build());
 
         var result = AdminScaleClientState.getLastResult();
@@ -239,6 +257,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                 .initialValue(result.scale())
                 .label(Component.literal(result.name()))
                 .formatter(v -> Component.literal(String.format("%.1fx", v)))
+                .style(CONTROL_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build();
         addRenderableWidget(adminSlider);
 
@@ -249,6 +269,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                     frozen = !frozen;
                     btn.setMessage(frozenLabel());
                 })
+                .style(CONTROL_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build();
         addRenderableWidget(freezeToggle);
 
@@ -260,6 +282,8 @@ public class ScaleScreen extends BaseFranklyScreen {
                         ClientScaleNetwork.sendAdminSet(result.target(), adminSlider.getValue(), frozen);
                     }
                 })
+                .style(ACCENT_STYLE)
+                .animation(HOVER_ANIMATION)
                 .build());
     }
 
@@ -289,6 +313,9 @@ public class ScaleScreen extends BaseFranklyScreen {
     @Override
     protected void renderPanelContent(GuiGraphicsExtractor graphics, int panelX, int panelY, int mouseX, int mouseY,
             float delta) {
+        FranklyUiStyle.drawRoundedRect(graphics, panelX + 8, panelY + 7, PANEL_WIDTH - 16, 29, 0x99131A31, 6);
+        graphics.fill(panelX + 18, panelY + 15, panelX + 52, panelY + 17, 0xFFB98AFF);
+        graphics.fill(panelX + 56, panelY + 15, panelX + 72, panelY + 17, 0xFF688EDC);
         if (currentSection != Section.ADMIN || adminNameBox == null) {
             return;
         }
