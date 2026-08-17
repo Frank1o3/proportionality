@@ -2,6 +2,7 @@ package frank1o3.statscale;
 
 import com.frank1o3.franklylib.config.FranklyConfigHolder;
 import frank1o3.statscale.network.ScalePacketHandler;
+import frank1o3.statscale.core.ScaleProfileCache;
 import frank1o3.statscale.network.packets.AdminScaleInfoPayload;
 import frank1o3.statscale.network.packets.AdminScaleQueryPayload;
 import frank1o3.statscale.network.packets.AdminScaleSetPayload;
@@ -146,8 +147,9 @@ public class Proportionality implements ModInitializer {
             LOGGER.info("[Proportionality] Scale storage loaded.");
         });
 
-        ServerPlayConnectionEvents.JOIN.register((listener, sender, server) -> {
-            syncPlayerState(listener.player);
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ScaleProfileCache.remove(handler.player.getUUID());
+            ScalePacketHandler.removePlayerState(handler.player.getUUID());
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {

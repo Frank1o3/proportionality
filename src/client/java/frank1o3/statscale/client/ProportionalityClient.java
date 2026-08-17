@@ -39,7 +39,11 @@ public class ProportionalityClient implements ClientModInitializer {
         ScaleKeybind.register();
 
         // 3. Reset client state on disconnect so slider defaults are sane next session.
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ScaleClientState.reset());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            ScaleClientState.reset();
+            ClientScaleNetwork.cancelPending();
+            ScaleKeybind.cancelPendingOpen();
+        });
     }
 
     /**

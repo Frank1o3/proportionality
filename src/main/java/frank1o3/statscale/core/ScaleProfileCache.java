@@ -2,7 +2,13 @@ package frank1o3.statscale.core;
 
 import frank1o3.statscale.storage.ServerScaleConfig;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public final class ScaleProfileCache {
+
+    private static final Map<UUID, AppliedProfileState> LAST_APPLIED_PROFILES = new ConcurrentHashMap<>();
 
     private ScaleProfileCache() {
     }
@@ -27,6 +33,19 @@ public final class ScaleProfileCache {
         return Double.compare(previous.scale(), scale) == 0
                 && Double.compare(previous.maxScale(), maxScale) == 0
                 && previous.configSignature().equals(configSignature);
+    }
+
+    public static AppliedProfileState get(UUID playerId) {
+        return LAST_APPLIED_PROFILES.get(playerId);
+    }
+
+    public static void put(UUID playerId, AppliedProfileState state) {
+        LAST_APPLIED_PROFILES.put(playerId, state);
+    }
+
+    /** Removes a disconnected player's cached profile. */
+    public static void remove(UUID playerId) {
+        LAST_APPLIED_PROFILES.remove(playerId);
     }
 
     public record AppliedProfileState(double scale, double maxScale, String configSignature) {

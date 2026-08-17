@@ -8,7 +8,9 @@ import frank1o3.statscale.network.packets.RangeSyncPayload;
 import frank1o3.statscale.network.packets.ScaleRequestPayload;
 import frank1o3.statscale.network.packets.ScaleSyncPayload;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import frank1o3.statscale.Proportionality;
 import frank1o3.statscale.storage.ScaleStorage;
@@ -41,6 +43,9 @@ import net.minecraft.world.entity.ai.attributes.RangedAttribute;
  * {@link ServerPlayNetworking}).
  */
 public final class ScalePacketHandler {
+
+    private static final long MIN_REQUEST_INTERVAL_MS = 100;
+    private static final Map<UUID, Long> LAST_REQUEST_TIME = new ConcurrentHashMap<>();
 
     /**
      * The server-wide maximum scale cap.
@@ -93,6 +98,12 @@ public final class ScalePacketHandler {
             double minScale,
             double maxScale) {
 
+        if (!Double.isFinite(payload.scale())) {
+            Proportionality.LOGGER.warn("[Proportionality] Ignored invalid scale request from {}.",
+                    player.getName().getString());
+            return;
+        }
+
         double effectiveMax = resolveEffectiveMax(player, minScale, maxScale, config);
 
         // 0. Frozen players cannot change their own scale, full stop — regardless
@@ -106,11 +117,25 @@ public final class ScalePacketHandler {
         }
 
         double requested = payload.scale();
+
+        // Rate-limit: ignore requests that arrive faster than MIN_REQUEST_INTERVAL_MS.
+        long now = System.currentTimeMillis();
+        Long lastRequest = LAST_REQUEST_TIME.get(player.getUUID());
+        if (lastRequest != null && (now - lastRequest) < MIN_REQUEST_INTERVAL_MS) {
+            return;
+        }
+        LAST_REQUEST_TIME.put(player.getUUID(), now);
+
         double clamped = Mth.clamp(requested, minScale, effectiveMax);
 
         HandleCallbacks.applyScaleProfile(player, clamped, effectiveMax, config);
         storage.setScale(player.getUUID(), clamped); // guaranteed to succeed; already checked frozen above
         ServerPlayNetworking.send(player, new ScaleSyncPayload(clamped, effectiveMax));
+    }
+
+    /** Removes transient per-player request state after disconnect. */
+    public static void removePlayerState(UUID playerId) {
+        LAST_REQUEST_TIME.remove(playerId);
     }
 
     // -------------------------------------------------------------------------
@@ -263,6 +288,12 @@ public final class ScalePacketHandler {
             return;
         }
 
+        if (!Double.isFinite(payload.scale())) {
+            Proportionality.LOGGER.warn("[Proportionality] Ignored invalid admin scale request from {}.",
+                    sender.getName().getString());
+            return;
+        }
+
         ServerPlayer target = server.getPlayerList().getPlayer(payload.target());
         double effectiveMax = target != null
                 ? resolveEffectiveMax(target, minScale, maxScale, config)
@@ -279,6 +310,11 @@ public final class ScalePacketHandler {
         Proportionality.LOGGER.info(
                 "[Proportionality] {} set {}'s scale to {} (frozen={}).",
                 sender.getName().getString(), payload.target(), clamped, payload.frozen());
+
+        // Send confirmation back to the admin so their UI updates immediately.
+        String targetName = target != null ? target.getName().getString() : payload.target().toString();
+        ServerPlayNetworking.send(sender, new AdminScaleInfoPayload(
+                target != null, payload.target(), targetName, clamped, effectiveMax, payload.frozen()));
     }
 
     // -------------------------------------------------------------------------

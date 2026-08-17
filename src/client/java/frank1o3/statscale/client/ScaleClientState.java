@@ -97,14 +97,14 @@ public final class ScaleClientState {
     public static void applySync(double scale, double maxScale) {
         currentScale = scale;
         if (hasRange) {
-            ScaleClientState.maxScale = maxScale;
+            ScaleClientState.maxScale = Math.max(minScale, maxScale);
         }
     }
 
     /** Records the complete selectable range sent by the server. */
     public static void applyRange(double minScale, double maxScale) {
         ScaleClientState.minScale = minScale;
-        ScaleClientState.maxScale = maxScale;
+        ScaleClientState.maxScale = Math.max(minScale, maxScale);
         hasRange = true;
     }
 

@@ -352,6 +352,10 @@ public class ScaleScreen extends BaseFranklyScreen {
                     return true;
                 }
             }
+            // Click was outside the suggestion list — dismiss it.
+            if (!adminNameBox.isMouseOver(mouseX, mouseY)) {
+                suggestions = List.of();
+            }
         }
         return super.mouseClicked(event, doubleClick);
     }

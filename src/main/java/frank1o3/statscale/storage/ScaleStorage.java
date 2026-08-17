@@ -131,6 +131,7 @@ public final class ScaleStorage {
                         migrated[0] |= !obj.has("lastSeenEpochMillis");
                         parsed = new PlayerScaleData(scale, frozen, lastSeen);
                     }
+                    validateScale(parsed.scale());
                     data.put(uuid, parsed);
                 } catch (IllegalArgumentException | IllegalStateException e) {
                     Proportionality.LOGGER.warn(
@@ -196,6 +197,7 @@ public final class ScaleStorage {
     }
 
     public boolean setScale(UUID uuid, double scale) {
+        validateScale(scale);
         if (isFrozen(uuid)) {
             return false;
         }
@@ -205,6 +207,7 @@ public final class ScaleStorage {
     }
 
     public void adminSetScale(UUID uuid, double scale, boolean frozen) {
+        validateScale(scale);
         data.put(uuid, new PlayerScaleData(scale, frozen, System.currentTimeMillis()));
         dirty.set(true);
     }
@@ -256,6 +259,12 @@ public final class ScaleStorage {
             dirty.set(true);
         }
         return removed;
+    }
+
+    private static void validateScale(double scale) {
+        if (!Double.isFinite(scale) || scale <= 0) {
+            throw new IllegalArgumentException("Scale must be positive and finite");
+        }
     }
 
     /** Writes to disk only if something changed since the last save. */

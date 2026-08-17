@@ -38,6 +38,7 @@ public final class ScaleKeybind {
 
     /** The registered {@link KeyMapping} instance. */
     private static KeyMapping openScreenKey;
+    private static boolean pendingOpen;
 
     private ScaleKeybind() {
         throw new UnsupportedOperationException("Utility class");
@@ -64,7 +65,15 @@ public final class ScaleKeybind {
                 if (client.gui.screen() == null && ScaleClientState.hasRange()) {
                     // Only open if no other screen is currently shown.
                     client.gui.setScreen(new ScaleScreen(null));
+                } else if (client.gui.screen() == null) {
+                    // Range hasn't arrived yet; remember the intent.
+                    pendingOpen = true;
                 }
+            }
+            // If a pending open was stored and the range has since arrived, open now.
+            if (pendingOpen && ScaleClientState.hasRange() && client.gui.screen() == null) {
+                pendingOpen = false;
+                client.gui.setScreen(new ScaleScreen(null));
             }
         });
     }
@@ -82,5 +91,10 @@ public final class ScaleKeybind {
      */
     public static KeyMapping getOpenScreenKey() {
         return openScreenKey;
+    }
+
+    /** Clears a deferred screen-open request when the client disconnects. */
+    public static void cancelPendingOpen() {
+        pendingOpen = false;
     }
 }

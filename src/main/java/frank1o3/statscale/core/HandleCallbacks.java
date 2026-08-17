@@ -7,9 +7,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Handles the application of scale-derived attribute profiles to
@@ -43,8 +40,6 @@ public class HandleCallbacks {
             "player_block_reach");
     private static final Identifier KNOCKBACK_RESISTANCE_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale",
             "player_knockback_resistance");
-    private static final Map<UUID, ScaleProfileCache.AppliedProfileState> LAST_APPLIED_PROFILES = new HashMap<>();
-
     // -------------------------------------------------------------------------
     // Core API
     // -------------------------------------------------------------------------
@@ -72,7 +67,7 @@ public class HandleCallbacks {
      */
     public static void applyScaleProfile(ServerPlayer player, double scale, double maxScale, ServerScaleConfig config) {
         String configSignature = ScaleProfileCache.createConfigSignature(config);
-        ScaleProfileCache.AppliedProfileState previous = LAST_APPLIED_PROFILES.get(player.getUUID());
+        ScaleProfileCache.AppliedProfileState previous = ScaleProfileCache.get(player.getUUID());
         if (ScaleProfileCache.shouldReuseCachedProfile(previous, scale, maxScale, configSignature)) {
             return;
         }
@@ -94,7 +89,7 @@ public class HandleCallbacks {
                 profile.knockBackResistance());
         float newMaxHeath = player.getMaxHealth();
         player.setHealth(newMaxHeath * healthPercentage);
-        LAST_APPLIED_PROFILES.put(player.getUUID(),
+        ScaleProfileCache.put(player.getUUID(),
                 new ScaleProfileCache.AppliedProfileState(scale, maxScale, configSignature));
     }
 

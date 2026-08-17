@@ -44,7 +44,8 @@ public final class Scale {
             case KNOCK_BACK_RESISTANCE -> config.exponentKnockBackResistance;
         };
 
-        double pow = Math.pow(scale, exponent);
+        // Prevent zero combined with a negative exponent from producing infinity.
+        double pow = Math.pow(Math.max(scale, 0.0001), exponent);
         return Math.max(pow, 0.000_000_1f);
     }
 
