@@ -3,7 +3,6 @@
     "package": "frank1o3.statscale.client.mixin",
     "compatibilityLevel": "JAVA_25",
     "client": [
-        "accessors.InventoryScreenAccessor",
         "PlayerModelMixin"
     ],
     "injectors": {

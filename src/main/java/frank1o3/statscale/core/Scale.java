@@ -23,7 +23,8 @@ public final class Scale {
                 calculate(scale, maxScale, AttributeType.ATTACK_DAMAGE, config),
                 calculate(scale, maxScale, AttributeType.REACH, config),
                 calculate(scale, maxScale, AttributeType.STEP_HEIGHT, config),
-                calculate(scale, maxScale, AttributeType.FALL_DISTANCE, config));
+                calculate(scale, maxScale, AttributeType.FALL_DISTANCE, config),
+                calculate(scale, maxScale, AttributeType.KNOCK_BACK_RESISTANCE, config));
     }
 
     private static double calculate(
@@ -40,6 +41,7 @@ public final class Scale {
             case JUMP_STRENGTH -> config.exponentJumpStrength;
             case MOVEMENT_SPEED -> config.exponentMovementSpeed;
             case FALL_DISTANCE -> config.exponentFallDistance;
+            case KNOCK_BACK_RESISTANCE -> config.exponentKnockBackResistance;
         };
 
         double pow = Math.pow(scale, exponent);
@@ -53,7 +55,8 @@ public final class Scale {
         ATTACK_DAMAGE,
         REACH,
         STEP_HEIGHT,
-        FALL_DISTANCE
+        FALL_DISTANCE,
+        KNOCK_BACK_RESISTANCE
     }
 
     public record ScaleProfile(
@@ -64,6 +67,7 @@ public final class Scale {
             double attackDamage,
             double reach,
             double stepHeight,
-            double fallDistance) {
+            double fallDistance,
+            double knockBackResistance) {
     }
 }

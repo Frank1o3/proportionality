@@ -254,7 +254,7 @@ public class Proportionality implements ModInitializer {
         return minScale;
     }
 
-    public static double getMaxcale() {
+    public static double getMaxScale() {
         return maxScale;
     }
 

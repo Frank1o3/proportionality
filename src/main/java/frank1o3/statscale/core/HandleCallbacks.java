@@ -41,6 +41,8 @@ public class HandleCallbacks {
     private static final Identifier FALL_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale", "player_fall");
     private static final Identifier BLOCK_REACH_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale",
             "player_block_reach");
+    private static final Identifier KNOCKBACK_RESISTANCE_MODIFIER_ID = Identifier.fromNamespaceAndPath("statscale",
+            "player_knockback_resistance");
     private static final Map<UUID, ScaleProfileCache.AppliedProfileState> LAST_APPLIED_PROFILES = new HashMap<>();
 
     // -------------------------------------------------------------------------
@@ -69,9 +71,9 @@ public class HandleCallbacks {
      *                 server-configured maximum, whichever is smaller.
      */
     public static void applyScaleProfile(ServerPlayer player, double scale, double maxScale, ServerScaleConfig config) {
-        String configSignature = createConfigSignature(config);
+        String configSignature = ScaleProfileCache.createConfigSignature(config);
         ScaleProfileCache.AppliedProfileState previous = LAST_APPLIED_PROFILES.get(player.getUUID());
-        if (shouldReuseCachedProfile(previous, scale, maxScale, configSignature)) {
+        if (ScaleProfileCache.shouldReuseCachedProfile(previous, scale, maxScale, configSignature)) {
             return;
         }
 
@@ -88,6 +90,8 @@ public class HandleCallbacks {
         applyModifier(player.getAttribute(Attributes.BLOCK_INTERACTION_RANGE), BLOCK_REACH_MODIFIER_ID,
                 profile.reach() * 0.6f);
         applyModifier(player.getAttribute(Attributes.SAFE_FALL_DISTANCE), FALL_MODIFIER_ID, profile.fallDistance());
+        applyModifier(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), KNOCKBACK_RESISTANCE_MODIFIER_ID,
+                profile.knockBackResistance());
         float newMaxHeath = player.getMaxHealth();
         player.setHealth(newMaxHeath * healthPercentage);
         LAST_APPLIED_PROFILES.put(player.getUUID(),
@@ -123,24 +127,5 @@ public class HandleCallbacks {
 
         AttributeModifier modifier = new AttributeModifier(id, delta, AttributeModifier.Operation.ADD_VALUE);
         instance.addPermanentModifier(modifier);
-        Attributes.MAX_HEALTH.value();
-    }
-
-    static String createConfigSignature(ServerScaleConfig config) {
-        return String.join(":",
-                Double.toString(config.exponentMaxHealth),
-                Double.toString(config.exponentAttackDamage),
-                Double.toString(config.exponentReach),
-                Double.toString(config.exponentStepHeight),
-                Double.toString(config.exponentJumpStrength),
-                Double.toString(config.exponentMovementSpeed),
-                Double.toString(config.exponentFallDistance),
-                Double.toString(config.exponentKnockBackResistance));
-    }
-
-    static boolean shouldReuseCachedProfile(ScaleProfileCache.AppliedProfileState previous, double scale,
-            double maxScale,
-            String configSignature) {
-        return ScaleProfileCache.shouldReuseCachedProfile(previous, scale, maxScale, configSignature);
     }
 }

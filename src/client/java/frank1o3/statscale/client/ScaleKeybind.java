@@ -48,7 +48,7 @@ public final class ScaleKeybind {
     // -------------------------------------------------------------------------
 
     /**
-     * Registers the keybind with Fabric's {@link KeyBindingHelper} and subscribes
+     * Registers the keybind with Fabric's {@link KeyMappingHelper} and subscribes
      * to the client tick event to poll for presses.
      *
      * <p>
