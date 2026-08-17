@@ -31,10 +31,6 @@ dependencies {
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "com.frank1o3.franklylib:franklylib:${project.franklylib_version}"
 
-    testImplementation platform('org.junit:junit-bom:6.1.2')
-    testImplementation 'org.junit.jupiter:junit-jupiter:6.1.2'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.1.2'
-
     // Full API on compile classpath so Loom's interface injection can resolve
     // interfaces added to vanilla classes, even for modules you don't call directly.
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
@@ -70,10 +66,6 @@ jar {
 	from("LICENSE") {
 		rename { "${it}_$projectName"}
 	}
-}
-
-test {
-	useJUnitPlatform()
 }
 
 // configure the maven publication
