@@ -6,19 +6,21 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-def reposiliteHost = System.getenv("GITHUB_ACTIONS") == "true"
-    ? "http://reposilite:8080"
+def isGithubActions = System.getenv("GITHUB_ACTIONS") == "true"
+
+def reposiliteHost = isGithubActions
+    ? "https://repo-frank1o3.duckdns.org"
     : "http://cachyos-server:8080"
 
 repositories {
-	mavenCentral()
-	maven {
+    mavenCentral()
+
+    maven {
         name = "Reposilite"
         url = uri("${reposiliteHost}/frank1o3")
-        allowInsecureProtocol = true
+        allowInsecureProtocol = !isGithubActions
     }
 }
-
 
 loom {
 	splitEnvironmentSourceSets()
